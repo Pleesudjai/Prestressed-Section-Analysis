@@ -2,7 +2,15 @@ function [results] = analyzePrestressedBeam(beam, section, materials, prestress,
 % ANALYZEPRESTRESSEDBEAM - Analyze prestressed concrete beam
 % Calculates axial force (N), shear force (V), and bending moment (M) diagrams
 %
-% CORRECTED VERSION - Proper boundary conditions for simple support
+% SIGN CONVENTION (Universal Beam Convention):
+%   Positive Moment (+M) = Sagging (tension at bottom, compression at top)
+%   Negative Moment (-M) = Hogging (tension at top, compression at bottom)
+%   Positive eccentricity (e > 0) = tendon BELOW centroid
+%   Prestress force P > 0 (compression)
+%
+% Prestress Moment:
+%   Tendon below centroid (e > 0) creates HOGGING → M_prestress = -P*e
+%   Tendon above centroid (e < 0) creates SAGGING → M_prestress = -P*e (still works)
 %
 % Boundary Conditions for Simply Supported Beam:
 %   At x = 0 (left support):
@@ -11,10 +19,6 @@ function [results] = analyzePrestressedBeam(beam, section, materials, prestress,
 %   At x = L (right support):
 %     - M(L) = 0 (moment boundary condition, satisfied by correct reactions)
 %     - V(L-) = -R_right (shear before support)
-%
-% Integration: Start from left support with V(0) = R_left, M(0) = 0
-%              Integrate forward WITHOUT adding R_right during integration
-%              R_right is only used to calculate reactions from equilibrium
 %
 % Inputs:
 %   beam - Beam geometry structure
@@ -84,9 +88,18 @@ results.loads = loads;
 
 end
 
-%% PRESTRESS EFFECTS
+%% PRESTRESS EFFECTS - CORRECTED SIGN
 function [P, e_eff, M_prestress, V_prestress] = calculatePrestressEffects(beam, section, prestress)
 % Calculate effective prestress force, eccentricity, and equivalent loads
+%
+% SIGN CONVENTION:
+%   e > 0 means tendon is BELOW centroid
+%   P > 0 (always positive, it's a force magnitude)
+%   M_prestress = -P * e  (negative = hogging when tendon below centroid)
+%
+% Physical reasoning:
+%   Tendon below centroid pulls the bottom fiber into compression
+%   more than the top → beam cambers upward → HOGGING moment → NEGATIVE M
 
 x = beam.x;
 n = length(x);
@@ -104,26 +117,27 @@ for i = 1:length(prestress.tendons)
     % Effective prestress force (after losses)
     Pe = tendon.Aps * tendon.fpi * (1 - prestress.losses);
    
-    % Eccentricity profile
+    % Eccentricity profile (positive = below centroid)
     e = tendon.e;
     
-    % Add to totals (weighted by bonding for moment effects)
+    % Add to totals
     P = P + Pe * ones(1, n);  % Axial force always acts
     e_eff = e_eff + Pe * e;   % Weighted eccentricity
     
-    % Primary moment from prestress: M = P * e
-    M_primary = Pe * e;
-    
-    % Calculate equivalent loads for secondary effects (if applicable)
-    % For simple spans, secondary moments are zero
-    % For continuous beams, would need additional analysis
+    % -------------------------------------------------------
+    % CORRECTED: Primary moment from prestress
+    %   M_prestress = -P * e
+    %   When e > 0 (tendon below CG): M < 0 → hogging (camber)
+    %   When e < 0 (tendon above CG): M > 0 → sagging
+    % -------------------------------------------------------
+    M_primary = -Pe * e;
     
     M_prestress = M_prestress + M_primary;
     
     % Shear from prestress (due to tendon inclination)
-    % V = P * de/dx
+    % V = -P * de/dx (negative because upward force from draping)
     de_dx = gradient(e, x);
-    V_prestress = V_prestress + Pe * de_dx;
+    V_prestress = V_prestress - Pe * de_dx;
 end
 
 % Normalize effective eccentricity by total force
@@ -138,11 +152,6 @@ end
 function [V, M, V_dead, V_live, M_dead, M_live, reactions] = calculateInternalForces(beam, loads, section)
 % Calculate shear and moment diagrams from applied loads
 % CORRECTED: Proper boundary conditions for simple support
-%
-% Simple Support BCs:
-%   - M(0) = 0, V(0+) = R_left
-%   - M(L) = 0 (satisfied by equilibrium), V(L-) = -R_right
-%   - R_right is NOT added during forward integration
 
 x = beam.x;
 n = length(x);
@@ -176,9 +185,6 @@ for i = 1:size(loads.distributed, 1)
     mask = (x >= x_start) & (x <= x_end);
     if any(mask)
         w_segment = interp1([x_start, x_end], [w_start, w_end], x(mask), 'linear');
-        
-        % Classify as dead or live based on sign or position
-        % For simplicity, all distributed loads go to dead load category
         w_dead(mask) = w_dead(mask) + w_segment;
     end
 end
@@ -188,16 +194,13 @@ w = w_dead + w_live;
 %% Calculate reactions from equilibrium
 switch loads.support_type
     case 'simple'
-        % Simple supports at specified locations
         x_left = loads.supports(1);
         x_right = loads.supports(2);
         span = x_right - x_left;
         
-        % Calculate total load and moment about left support
         total_load = trapz(x, w);
         moment_left = trapz(x, w .* (x - x_left));
         
-        % Add point loads
         for i = 1:size(loads.point, 1)
             x_p = loads.point(i, 1);
             P_p = loads.point(i, 2);
@@ -207,9 +210,6 @@ switch loads.support_type
             moment_left = moment_left + P_p * (x_p - x_left) + M_p;
         end
         
-        % Reactions from equilibrium:
-        % Sum of vertical forces: R_left + R_right + total_load = 0
-        % Sum of moments about left: R_right * span + moment_left = 0
         R_right = -moment_left / span;
         R_left = -total_load - R_right;
         
@@ -224,10 +224,8 @@ switch loads.support_type
         fprintf('    Check: R_left + R_right + W_total = %.6f (should be ~0)\n', R_left + R_right + total_load);
         
     case 'cantilever'
-        % Cantilever from left support
         x_support = loads.supports(1);
         
-        % Fixed-end reactions
         total_load = trapz(x, w);
         moment_support = trapz(x, w .* (x - x_support));
         
@@ -251,26 +249,13 @@ end
 %% Calculate shear and moment with CORRECT boundary conditions
 switch loads.support_type
     case 'simple'
-        % Find indices of support locations
         [~, idx_left] = min(abs(x - reactions.x_left));
         [~, idx_right] = min(abs(x - reactions.x_right));
         
-        %% BOUNDARY CONDITIONS at left support (x = 0)
-        % M(0) = 0
-        % V(0+) = R_left
         V(idx_left) = reactions.left;
         M(idx_left) = 0;
         
-        %% FORWARD INTEGRATION from left to right
-        % dV/dx = w (load intensity)
-        % dM/dx = V
-        %
-        % CRITICAL: Do NOT add R_right during integration
-        %           R_right is already accounted for in equilibrium
-        %           M(L) should naturally equal 0 if reactions are correct
-        
         for i = (idx_left+1):n
-            % Check for point loads at this location (NOT support reactions)
             P_point = 0;
             M_point = 0;
             for j = 1:size(loads.point, 1)
@@ -280,20 +265,14 @@ switch loads.support_type
                 end
             end
             
-            % Integrate shear: V(i) = V(i-1) + integral(w*dx) + P_point
-            % Using trapezoidal rule: integral = (w(i-1) + w(i))/2 * dx
             w_avg = (w(i-1) + w(i)) / 2;
             V(i) = V(i-1) + w_avg * dx + P_point;
             
-            % Integrate moment: M(i) = M(i-1) + integral(V*dx) + M_point
             V_avg = (V(i-1) + V(i)) / 2;
             M(i) = M(i-1) + V_avg * dx + M_point;
         end
         
-        %% Integrate backwards from left support (if idx_left > 1)
-        % This handles any overhang before the left support
         for i = (idx_left-1):-1:1
-            % Check for point loads
             P_point = 0;
             M_point = 0;
             for j = 1:size(loads.point, 1)
@@ -303,7 +282,6 @@ switch loads.support_type
                 end
             end
             
-            % Integrate backwards
             w_avg = (w(i) + w(i+1)) / 2;
             V(i) = V(i+1) - w_avg * dx - P_point;
             
@@ -311,7 +289,6 @@ switch loads.support_type
             M(i) = M(i+1) - V_avg * dx - M_point;
         end
         
-        %% VERIFICATION: Check boundary conditions
         fprintf('  Boundary condition verification:\n');
         fprintf('    M(0)   = %.6f kip-in (should be 0)\n', M(idx_left));
         fprintf('    M(L)   = %.6f kip-in (should be 0)\n', M(idx_right));
@@ -323,13 +300,11 @@ switch loads.support_type
         end
         
     case 'cantilever'
-        % Start from support
         [~, idx_support] = min(abs(x - reactions.x_support));
         
         V(idx_support) = reactions.vertical;
         M(idx_support) = reactions.moment;
         
-        % Integrate forward
         for i = idx_support+1:n
             P_point = 0;
             M_point = 0;
@@ -347,7 +322,6 @@ switch loads.support_type
             M(i) = M(i-1) + V_avg * dx + M_point;
         end
         
-        % Integrate backward from support
         for i = idx_support-1:-1:1
             P_point = 0;
             M_point = 0;
@@ -367,8 +341,7 @@ switch loads.support_type
 end
 
 % Separate dead and live load effects (simplified approach)
-% In practice, would need separate calculations
-V_dead = V;  % Placeholder - all loads treated as dead for now
+V_dead = V;
 M_dead = M;
 V_live = zeros(1, n);
 M_live = zeros(1, n);
@@ -378,12 +351,27 @@ end
 %% STRESS CALCULATIONS
 function stresses = calculateStresses(results, section, materials)
 % Calculate stresses at critical locations
+%
+% Sign Convention:
+%   Compression = negative
+%   Tension = positive
+%
+% Prestress stress (using direct P, e approach — consistent with M_prestress):
+%   f = -P/A + P*e*y/I   (where y is measured from centroid, + upward)
+%   At top:    f_top = -P/A + P*e*yt/Ix    
+%   At bottom: f_bot = -P/A - P*e*yb/Ix    
+%
+%   When e > 0 (tendon below): bottom gets MORE compression ✓
+%
+% External load stress:
+%   f = -M*y/I  (for sagging M > 0: compression at top, tension at bottom)
+%   At top:    f_top = -M*yt/Ix
+%   At bottom: f_bot = +M*yb/Ix
 
 n = length(results.x);
 
-% Initialize stress arrays
-stresses.f_top = zeros(1, n);      % Stress at top fiber (ksi)
-stresses.f_bot = zeros(1, n);      % Stress at bottom fiber (ksi)
+stresses.f_top = zeros(1, n);
+stresses.f_bot = zeros(1, n);
 stresses.f_top_prestress = zeros(1, n);
 stresses.f_bot_prestress = zeros(1, n);
 stresses.f_top_total = zeros(1, n);
@@ -395,21 +383,18 @@ yt = section.yt;
 yb = section.yb;
 
 for i = 1:n
-    P = results.P(i);           % Prestress force (kips)
-    e = results.e(i);           % Eccentricity (in)
-    M = results.M(i);           % External moment (kip-in)
+    P = results.P(i);
+    e = results.e(i);
+    M = results.M(i);
     
-    % Prestress stresses: f = -P/A ± P*e*y/I
-    % Convention: compression negative
-    f_prestress_top = -P/A + P*e*yt/Ix;    % Top fiber
-    f_prestress_bot = -P/A - P*e*yb/Ix;    % Bottom fiber
+    % Prestress stresses
+    f_prestress_top = -P/A + P*e*yt/Ix;
+    f_prestress_bot = -P/A - P*e*yb/Ix;
     
-    % External load stresses: f = M*y/I
-    % For positive moment (sagging): tension at bottom
-    f_load_top = -M*yt/Ix;   % Compression at top for positive M
-    f_load_bot = M*yb/Ix;    % Tension at bottom for positive M
+    % External load stresses
+    f_load_top = -M*yt/Ix;
+    f_load_bot = M*yb/Ix;
     
-    % Store results
     stresses.f_top_prestress(i) = f_prestress_top;
     stresses.f_bot_prestress(i) = f_prestress_bot;
     stresses.f_top(i) = f_load_top;
@@ -418,61 +403,46 @@ for i = 1:n
     stresses.f_bot_total(i) = f_prestress_bot + f_load_bot;
 end
 
-% Allowable stresses
-stresses.fc_allow_compression = -0.45 * materials.fc;  % Compression limit
-stresses.fc_allow_tension = materials.fr;              % Tension limit
+stresses.fc_allow_compression = -0.45 * materials.fc;
+stresses.fc_allow_tension = materials.fr;
 
 end
 
 %% CAPACITY CALCULATIONS
 function capacity = calculateCapacity(section, materials, prestress, reinforcement)
-% Calculate moment capacity at critical sections
-
-% Nominal moment capacity (simplified)
-% Using rectangular stress block method
 
 fc = materials.fc;
 fy = materials.fy;
 fpu = materials.fpu;
-fpy = materials.fpy;  % Yield strength of prestressing steel
+fpy = materials.fpy;
 beta1 = 0.85 - 0.05 * (fc - 4);
 beta1 = max(0.65, min(0.85, beta1));
 
-% Total prestressing steel area
 Aps_total = sum(cellfun(@(t) t.Aps, prestress.tendons));
 
-% Average tendon depth (approximate)
 yc = section.yc;
 e_avg = mean(cellfun(@(t) mean(t.e), prestress.tendons));
 dp = yc + e_avg;
 
-% Effective prestress
 fpe = prestress.tendons{1}.fpi * (1 - prestress.losses);
 
-% Stress in prestressing steel at nominal strength (approximate)
 fps = fpu * (1 - 0.28 * (fpu / fc) * (Aps_total / (section.A * dp / section.yb)));
 fps = min(fps, fpy);
 
-% Calculate c (neutral axis depth) - iterative or approximate
-% Simplified: assume fps ≈ fpe + 15 ksi for bonded tendons
 fps_approx = min(fpe + 15, fpu);
 
-% Get width at different depths (approximate as average width)
 b = section.A / (section.yt + section.yb);
 
-% Equilibrium: 0.85*fc*beta1*c*b = Aps*fps
 c = Aps_total * fps_approx / (0.85 * fc * beta1 * b);
 a = beta1 * c;
 
-% Nominal moment capacity
 Mn = Aps_total * fps_approx * (dp - a/2);
 
-% Phi factor for prestressed members
-epsilon_t = 0.003 * (dp - c) / c;  % Tensile strain
+epsilon_t = 0.003 * (dp - c) / c;
 if epsilon_t >= 0.005
-    phi = 0.9;  % Tension-controlled
+    phi = 0.9;
 elseif epsilon_t <= 0.002
-    phi = 0.65; % Compression-controlled
+    phi = 0.65;
 else
     phi = 0.65 + (epsilon_t - 0.002) * (0.9 - 0.65) / (0.005 - 0.002);
 end
