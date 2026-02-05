@@ -84,8 +84,6 @@ section_options.show_dimensions = true;
 plotSection(section, prestress, reinforcement, materials, section_options);
 title('Cross-Section at Support (x = 0)', 'FontWeight', 'bold');
 
-% Using actual positions (inches)
-plotMultipleStressStrain(results, [60, 150, 300, 450, 540]);
 
 % At midspan (using fraction)
 plotSectionStressStrain(results, 0.5);

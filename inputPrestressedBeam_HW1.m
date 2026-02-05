@@ -71,7 +71,7 @@ materials.Es = 29000;           % Modulus of elasticity of mild steel (ksi)
 
 % Assume initial prestress at 75% of fpu
 fpi = 0.75 * materials.fpu;     % Initial prestress (ksi)
-Aps_required = 400 / fpi;       % Area required for 400 kips (in^2)
+Aps_required = 400 / fpi ;       % Area required for 400 kips (in^2)
 
 % Tendon 1 - Straight profile at y=6 (fully bonded)
 tendon1.Aps = Aps_required;     % Area of prestressing steel (in^2)
