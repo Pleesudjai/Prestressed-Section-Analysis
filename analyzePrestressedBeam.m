@@ -2,6 +2,20 @@ function [results] = analyzePrestressedBeam(beam, section, materials, prestress,
 % ANALYZEPRESTRESSEDBEAM - Analyze prestressed concrete beam
 % Calculates axial force (N), shear force (V), and bending moment (M) diagrams
 %
+% CORRECTED VERSION - Proper boundary conditions for simple support
+%
+% Boundary Conditions for Simply Supported Beam:
+%   At x = 0 (left support):
+%     - M(0) = 0 (moment boundary condition)
+%     - V(0+) = R_left (shear jumps by reaction)
+%   At x = L (right support):
+%     - M(L) = 0 (moment boundary condition, satisfied by correct reactions)
+%     - V(L-) = -R_right (shear before support)
+%
+% Integration: Start from left support with V(0) = R_left, M(0) = 0
+%              Integrate forward WITHOUT adding R_right during integration
+%              R_right is only used to calculate reactions from equilibrium
+%
 % Inputs:
 %   beam - Beam geometry structure
 %   section - Cross-section properties structure
@@ -120,9 +134,15 @@ end
 
 end
 
-%% INTERNAL FORCES
+%% INTERNAL FORCES - CORRECTED BOUNDARY CONDITIONS
 function [V, M, V_dead, V_live, M_dead, M_live, reactions] = calculateInternalForces(beam, loads, section)
 % Calculate shear and moment diagrams from applied loads
+% CORRECTED: Proper boundary conditions for simple support
+%
+% Simple Support BCs:
+%   - M(0) = 0, V(0+) = R_left
+%   - M(L) = 0 (satisfied by equilibrium), V(L-) = -R_right
+%   - R_right is NOT added during forward integration
 
 x = beam.x;
 n = length(x);
@@ -165,7 +185,7 @@ end
 
 w = w_dead + w_live;
 
-%% Calculate reactions based on support type
+%% Calculate reactions from equilibrium
 switch loads.support_type
     case 'simple'
         % Simple supports at specified locations
@@ -187,14 +207,21 @@ switch loads.support_type
             moment_left = moment_left + P_p * (x_p - x_left) + M_p;
         end
         
-        % Reactions
-        R_right = moment_left / span;
+        % Reactions from equilibrium:
+        % Sum of vertical forces: R_left + R_right + total_load = 0
+        % Sum of moments about left: R_right * span + moment_left = 0
+        R_right = -moment_left / span;
         R_left = -total_load - R_right;
         
         reactions.left = R_left;
         reactions.right = R_right;
         reactions.x_left = x_left;
         reactions.x_right = x_right;
+        
+        fprintf('  Calculated reactions from equilibrium:\n');
+        fprintf('    R_left  = %+.4f kips at x = %.1f in\n', R_left, x_left);
+        fprintf('    R_right = %+.4f kips at x = %.1f in\n', R_right, x_right);
+        fprintf('    Check: R_left + R_right + W_total = %.6f (should be ~0)\n', R_left + R_right + total_load);
         
     case 'cantilever'
         % Cantilever from left support
@@ -221,22 +248,29 @@ switch loads.support_type
         error('Unsupported support type: %s', loads.support_type);
 end
 
-%% Calculate shear and moment using integration
-% Using the relationship: dV/dx = -w, dM/dx = V
-
+%% Calculate shear and moment with CORRECT boundary conditions
 switch loads.support_type
     case 'simple'
-        % Start from left support
-        V(1) = reactions.left;
-        M(1) = 0;
-        
         % Find indices of support locations
         [~, idx_left] = min(abs(x - reactions.x_left));
         [~, idx_right] = min(abs(x - reactions.x_right));
         
-        % Integrate shear to get moment
-        for i = 2:n
-            % Check for point loads at this location
+        %% BOUNDARY CONDITIONS at left support (x = 0)
+        % M(0) = 0
+        % V(0+) = R_left
+        V(idx_left) = reactions.left;
+        M(idx_left) = 0;
+        
+        %% FORWARD INTEGRATION from left to right
+        % dV/dx = w (load intensity)
+        % dM/dx = V
+        %
+        % CRITICAL: Do NOT add R_right during integration
+        %           R_right is already accounted for in equilibrium
+        %           M(L) should naturally equal 0 if reactions are correct
+        
+        for i = (idx_left+1):n
+            % Check for point loads at this location (NOT support reactions)
             P_point = 0;
             M_point = 0;
             for j = 1:size(loads.point, 1)
@@ -246,19 +280,46 @@ switch loads.support_type
                 end
             end
             
-            % Check for support reactions
-            if abs(x(i) - reactions.x_left) < dx/2
-                P_point = P_point + reactions.left;
-            end
-            if abs(x(i) - reactions.x_right) < dx/2
-                P_point = P_point + reactions.right;
+            % Integrate shear: V(i) = V(i-1) + integral(w*dx) + P_point
+            % Using trapezoidal rule: integral = (w(i-1) + w(i))/2 * dx
+            w_avg = (w(i-1) + w(i)) / 2;
+            V(i) = V(i-1) + w_avg * dx + P_point;
+            
+            % Integrate moment: M(i) = M(i-1) + integral(V*dx) + M_point
+            V_avg = (V(i-1) + V(i)) / 2;
+            M(i) = M(i-1) + V_avg * dx + M_point;
+        end
+        
+        %% Integrate backwards from left support (if idx_left > 1)
+        % This handles any overhang before the left support
+        for i = (idx_left-1):-1:1
+            % Check for point loads
+            P_point = 0;
+            M_point = 0;
+            for j = 1:size(loads.point, 1)
+                if abs(x(i+1) - loads.point(j, 1)) < dx/2
+                    P_point = P_point + loads.point(j, 2);
+                    M_point = M_point + loads.point(j, 3);
+                end
             end
             
-            % Integrate: V(i) = V(i-1) - integral(w)
-            V(i) = V(i-1) - trapz(x(i-1:i), w(i-1:i)) + P_point;
+            % Integrate backwards
+            w_avg = (w(i) + w(i+1)) / 2;
+            V(i) = V(i+1) - w_avg * dx - P_point;
             
-            % Integrate: M(i) = M(i-1) + integral(V)
-            M(i) = M(i-1) + trapz(x(i-1:i), V(i-1:i)) + M_point;
+            V_avg = (V(i) + V(i+1)) / 2;
+            M(i) = M(i+1) - V_avg * dx - M_point;
+        end
+        
+        %% VERIFICATION: Check boundary conditions
+        fprintf('  Boundary condition verification:\n');
+        fprintf('    M(0)   = %.6f kip-in (should be 0)\n', M(idx_left));
+        fprintf('    M(L)   = %.6f kip-in (should be 0)\n', M(idx_right));
+        fprintf('    V(0+)  = %+.4f kips (should equal R_left = %+.4f)\n', V(idx_left), reactions.left);
+        fprintf('    V(L-)  = %+.4f kips (should equal -R_right = %+.4f)\n', V(idx_right), -reactions.right);
+        
+        if abs(M(idx_right)) > 0.1
+            warning('M(L) = %.3f is not close to zero. Check reaction calculations!', M(idx_right));
         end
         
     case 'cantilever'
@@ -279,8 +340,11 @@ switch loads.support_type
                 end
             end
             
-            V(i) = V(i-1) - trapz(x(i-1:i), w(i-1:i)) + P_point;
-            M(i) = M(i-1) + trapz(x(i-1:i), V(i-1:i)) + M_point;
+            w_avg = (w(i-1) + w(i)) / 2;
+            V(i) = V(i-1) + w_avg * dx + P_point;
+            
+            V_avg = (V(i-1) + V(i)) / 2;
+            M(i) = M(i-1) + V_avg * dx + M_point;
         end
         
         % Integrate backward from support
@@ -294,8 +358,11 @@ switch loads.support_type
                 end
             end
             
-            V(i) = V(i+1) + trapz(x(i:i+1), w(i:i+1)) - P_point;
-            M(i) = M(i+1) - trapz(x(i:i+1), V(i:i+1)) - M_point;
+            w_avg = (w(i) + w(i+1)) / 2;
+            V(i) = V(i+1) - w_avg * dx - P_point;
+            
+            V_avg = (V(i) + V(i+1)) / 2;
+            M(i) = M(i+1) - V_avg * dx - M_point;
         end
 end
 
