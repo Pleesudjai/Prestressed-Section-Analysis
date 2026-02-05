@@ -65,6 +65,7 @@ end
 %% BEAM SCHEMATIC
 function plotBeamSchematic(results)
 
+
 x = results.x;
 L = results.L;
 section = results.section;
@@ -74,34 +75,34 @@ hold on;
 grid on;
 box on;
 
-% Draw beam outline (simplified as rectangle)
-h = section.yt + section.yb;
-yc = section.yc;
+% Beam dimensions - bottom at y=0
+h = section.yt + section.yb;  % Total height
+yc = section.yc;              % Centroid from bottom
+y_bot = 0;
+y_top = h;
 
-% Scale factor for visualization
-scale = L / (h * 5);
-
-% Draw beam (top and bottom lines)
-plot([0, L], [yc, yc]*scale, 'k-', 'LineWidth', 2);
-plot([0, L], [-section.yb, -section.yb]*scale, 'k-', 'LineWidth', 1);
-plot([0, L], [section.yt, section.yt]*scale, 'k-', 'LineWidth', 1);
-plot([0, 0], [-section.yb, section.yt]*scale, 'k-', 'LineWidth', 1);
-plot([L, L], [-section.yb, section.yt]*scale, 'k-', 'LineWidth', 1);
+% Draw beam outline
+plot([0, L], [yc, yc], 'k--', 'LineWidth', 1);      % Centroid (dashed)
+plot([0, L], [y_bot, y_bot], 'k-', 'LineWidth', 1);  % Bottom at y=0
+plot([0, L], [y_top, y_top], 'k-', 'LineWidth', 1);  % Top
+plot([0, 0], [y_bot, y_top], 'k-', 'LineWidth', 1);  % Left end
+plot([L, L], [y_bot, y_top], 'k-', 'LineWidth', 1);  % Right end
 
 % Fill beam
-fill([0, L, L, 0], [-section.yb, -section.yb, section.yt, section.yt]*scale, ...
+fill([0, L, L, 0], [y_bot, y_bot, y_top, y_top], ...
     [0.8, 0.8, 0.8], 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+
+% Centroid label
+text(L * 1.02, yc, 'C.G.', 'FontSize', 8, 'Color', [0.4, 0.4, 0.4], ...
+    'VerticalAlignment', 'middle');
 
 % Plot tendon profiles
 colors = lines(length(prestress.tendons));
 for i = 1:length(prestress.tendons)
     tendon = prestress.tendons{i};
-    y_tendon = (yc - tendon.e) * scale;  % Convert eccentricity to y-coordinate
+    y_tendon = yc - tendon.e;  % Actual y from bottom (no scale)
     
-    % Plot bonded and unbonded regions differently
     bonded = tendon.bonded;
-    
-    % Find continuous segments of bonded/unbonded regions
     diff_bonded = [true, diff(bonded) ~= 0];
     segment_starts = find(diff_bonded);
     segment_ends = [segment_starts(2:end) - 1, length(bonded)];
@@ -109,31 +110,26 @@ for i = 1:length(prestress.tendons)
     for j = 1:length(segment_starts)
         idx = segment_starts(j):segment_ends(j);
         if bonded(segment_starts(j))
-            % Bonded - solid line
             plot(x(idx), y_tendon(idx), '-', 'Color', colors(i,:), 'LineWidth', 2);
         else
-            % Unbonded - dashed line
             plot(x(idx), y_tendon(idx), '--', 'Color', colors(i,:), 'LineWidth', 2);
         end
     end
 end
 
-% Add supports
-support_h = 0.05 * L;
+% Supports at y=0 (bottom of beam)
+support_h = 0.05 * h;
 if isfield(results.loads, 'support_type')
     switch results.loads.support_type
         case 'simple'
-            % Pin at left
-            drawTriangle(results.reactions.x_left, -section.yb*scale, support_h, 'pin');
-            % Roller at right
-            drawTriangle(results.reactions.x_right, -section.yb*scale, support_h, 'roller');
+            drawTriangle(results.reactions.x_left, y_bot, support_h, 'pin');
+            drawTriangle(results.reactions.x_right, y_bot, support_h, 'roller');
         case 'cantilever'
-            % Fixed support
-            drawFixedSupport(results.reactions.x_support, -section.yb*scale, support_h);
+            drawFixedSupport(results.reactions.x_support, y_bot, support_h);
     end
 end
 
-% Add legend for tendons
+% Legend
 legend_entries = cell(1, length(prestress.tendons));
 for i = 1:length(prestress.tendons)
     tendon = prestress.tendons{i};
@@ -143,8 +139,9 @@ end
 legend(legend_entries, 'Location', 'northeast');
 
 xlabel('Distance along beam (in)');
-ylabel('Scaled elevation');
+ylabel('Elevation from bottom (in)');
 xlim([-0.05*L, 1.1*L]);
+ylim([y_bot - 0.15*h, y_top + 0.1*h]);
 
 end
 
