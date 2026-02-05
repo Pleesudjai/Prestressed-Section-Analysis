@@ -103,13 +103,47 @@ epsilon_external = f_external / Ec;
 epsilon_total = f_total / Ec;
 
 %% Find neutral axis location (where total stress = 0)
-if f_total_top * f_total_bot < 0
-    % Neutral axis is within the section
-    % Linear interpolation: y_na where f = 0
-    y_na_from_bottom = interp1(f_total, y_from_bottom, 0, 'linear');
+% For combined axial (P) and bending (M), the stress is:
+%   f(y) = -P/A + (P*e - M)*y/I
+% where y is measured from the centroid (positive upward)
+%
+% Setting f = 0 and solving for y:
+%   y_NA = (P/A) * I / (P*e - M)  [from centroid]
+%
+% Or equivalently, the NA is where the axial stress equals the bending stress
+
+% Calculate the net moment effect (prestress moment minus external moment)
+M_net = P*e - M;  % Net moment about centroid
+
+if abs(M_net) > 1e-6
+    % Calculate NA position from centroid
+    y_na_from_centroid = (P/A) * Ix / M_net;
+    y_na_from_bottom = yb + y_na_from_centroid;
+    
+    % Check if NA is within the section
+    if y_na_from_bottom < 0 || y_na_from_bottom > (yb + yt)
+        y_na_within_section = false;
+    else
+        y_na_within_section = true;
+    end
 else
-    y_na_from_bottom = NaN;  % Neutral axis outside section
+    % Pure axial case (no net moment) - NA at infinity
+    y_na_from_bottom = NaN;
+    y_na_from_centroid = NaN;
+    y_na_within_section = false;
 end
+
+% Also verify using interpolation (as a check)
+if f_total_top * f_total_bot < 0
+    y_na_interp = interp1(f_total, y_from_bottom, 0, 'linear');
+else
+    y_na_interp = NaN;
+end
+
+% Calculate curvature
+% φ = (ε_top - ε_bot) / h = Δf / (Ec * h)
+h_total = yb + yt;
+curvature = (f_total_top - f_total_bot) / (Ec * h_total);  % 1/in
 
 %% Create figure
 if isfield(options, 'figure_handle') && ishandle(options.figure_handle)
@@ -173,11 +207,22 @@ if strcmp(options.plot_type, 'both') || strcmp(options.plot_type, 'stress')
         'HorizontalAlignment', 'right', 'FontSize', 9);
     
     % Neutral axis
-    if ~isnan(y_na_from_bottom)
-        plot(xlim, [y_na_from_bottom, y_na_from_bottom], 'm--', 'LineWidth', 1.5);
+    if y_na_within_section
+        plot(xlim, [y_na_from_bottom, y_na_from_bottom], 'm-', 'LineWidth', 2);
         text(max(xlim)*0.95, y_na_from_bottom, sprintf(' N.A. @ %.2f in', y_na_from_bottom), ...
             'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right', ...
-            'FontSize', 9, 'Color', 'm');
+            'FontSize', 9, 'Color', 'm', 'FontWeight', 'bold');
+    elseif ~isnan(y_na_from_bottom)
+        % NA exists but is outside section - indicate direction
+        if y_na_from_bottom < 0
+            text(0.5, 0.05, sprintf('N.A. @ %.1f in (below section)', y_na_from_bottom), ...
+                'Units', 'normalized', 'FontSize', 8, 'Color', 'm', ...
+                'HorizontalAlignment', 'center');
+        else
+            text(0.5, 0.95, sprintf('N.A. @ %.1f in (above section)', y_na_from_bottom), ...
+                'Units', 'normalized', 'FontSize', 8, 'Color', 'm', ...
+                'HorizontalAlignment', 'center');
+        end
     end
     
     % Allowable stress limits
@@ -220,10 +265,12 @@ if strcmp(options.plot_type, 'both') || strcmp(options.plot_type, 'stress')
     % Add text box with key values
     info_str = sprintf(['P = %.1f kips\n' ...
                        'e = %.2f in\n' ...
-                       'M = %.0f kip-in\n' ...
+                       'M_{ext} = %.0f kip-in\n' ...
+                       'M_{net} = %.0f kip-in\n' ...
                        'f_{top} = %.3f ksi\n' ...
-                       'f_{bot} = %.3f ksi'], ...
-                       P, e, M, f_total_top, f_total_bot);
+                       'f_{bot} = %.3f ksi\n' ...
+                       'φ = %.2e 1/in'], ...
+                       P, e, M, M_net, f_total_top, f_total_bot, curvature);
     
     % Position text box in upper left or right depending on stress direction
     if mean(f_total) < 0
@@ -293,11 +340,11 @@ if strcmp(options.plot_type, 'both') || strcmp(options.plot_type, 'strain')
         'HorizontalAlignment', 'right', 'FontSize', 9);
     
     % Neutral axis
-    if ~isnan(y_na_from_bottom)
-        plot(xlim, [y_na_from_bottom, y_na_from_bottom], 'm--', 'LineWidth', 1.5);
+    if y_na_within_section
+        plot(xlim, [y_na_from_bottom, y_na_from_bottom], 'm-', 'LineWidth', 2);
         text(max(xlim)*0.95, y_na_from_bottom, sprintf(' N.A.'), ...
             'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right', ...
-            'FontSize', 9, 'Color', 'm');
+            'FontSize', 9, 'Color', 'm', 'FontWeight', 'bold');
     end
     
     % Annotations for extreme fiber strains
@@ -367,22 +414,36 @@ fprintf('Location: x = %.1f in (%.1f%% of span)\n', x_actual, x_actual/L*100);
 fprintf('\nInternal Forces:\n');
 fprintf('  Prestress P = %.1f kips\n', P);
 fprintf('  Eccentricity e = %.2f in\n', e);
-fprintf('  External Moment M = %.0f kip-in\n', M);
-fprintf('\nStresses:\n');
+fprintf('  Prestress Moment M_p = P*e = %.0f kip-in\n', P*e);
+fprintf('  External Moment M_ext = %.0f kip-in\n', M);
+fprintf('  Net Moment M_net = P*e - M = %.0f kip-in\n', M_net);
+fprintf('\nStresses (compression negative):\n');
 fprintf('  Top fiber:    f = %.4f ksi (%.0f με)\n', f_total_top, f_total_top/Ec*1e6);
 fprintf('  Bottom fiber: f = %.4f ksi (%.0f με)\n', f_total_bot, f_total_bot/Ec*1e6);
-fprintf('  Prestress component:\n');
+fprintf('  Prestress component (f = -P/A ± P*e*y/I):\n');
 fprintf('    Top:    %.4f ksi\n', f_prestress_top);
 fprintf('    Bottom: %.4f ksi\n', f_prestress_bot);
-fprintf('  External load component:\n');
+fprintf('  External load component (f = -M*y/I):\n');
 fprintf('    Top:    %.4f ksi\n', f_external_top);
 fprintf('    Bottom: %.4f ksi\n', f_external_bot);
-if ~isnan(y_na_from_bottom)
-    fprintf('\nNeutral Axis: %.2f in from bottom\n', y_na_from_bottom);
+fprintf('\nNeutral Axis (where f = 0):\n');
+fprintf('  y_NA from centroid = (P/A)*I/(P*e-M) = %.2f in\n', y_na_from_centroid);
+fprintf('  y_NA from bottom = %.2f in\n', y_na_from_bottom);
+if y_na_within_section
+    fprintf('  Status: Within section\n');
 else
-    fprintf('\nNeutral Axis: Outside section (entire section in %s)\n', ...
-        ternary(mean(f_total) < 0, 'compression', 'tension'));
+    if isnan(y_na_from_bottom)
+        fprintf('  Status: At infinity (pure axial, no net moment)\n');
+    elseif y_na_from_bottom < 0
+        fprintf('  Status: Below section (entire section in %s)\n', ...
+            ternary(f_total_bot < 0, 'compression', 'tension'));
+    else
+        fprintf('  Status: Above section (entire section in %s)\n', ...
+            ternary(f_total_top < 0, 'compression', 'tension'));
+    end
 end
+fprintf('\nCurvature:\n');
+fprintf('  φ = %.4e 1/in = %.4f 1/ft\n', curvature, curvature*12);
 fprintf('========================================\n\n');
 
 end
