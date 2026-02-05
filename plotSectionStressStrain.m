@@ -4,6 +4,10 @@ function plotSectionStressStrain(results, x_location, options)
 % Plots the variation of stress and strain through the cross-section depth
 % at a specified location along the beam length.
 %
+% Prestress effect is separated into:
+%   - Axial component:   f_axial   = -P/A  (uniform compression)
+%   - Bending component: f_bending = P*e*y/I (linear, due to eccentricity)
+%
 % Syntax:
 %   plotSectionStressStrain(results, x_location)
 %   plotSectionStressStrain(results, x_location, options)
@@ -22,13 +26,6 @@ function plotSectionStressStrain(results, x_location, options)
 %   results = analyzePrestressedBeam(beam, section, materials, prestress, reinforcement, loads);
 %   plotSectionStressStrain(results, 0.5);  % At midspan
 %   plotSectionStressStrain(results, 300);  % At x = 300 in
-%
-% The function displays:
-%   - Linear stress distribution from top to bottom fiber
-%   - Linear strain distribution (assuming plane sections remain plane)
-%   - Neutral axis location
-%   - Stress components from prestress and external loads
-%   - Allowable stress limits
 
 %% Parse inputs
 if nargin < 3
@@ -74,74 +71,66 @@ N = results.N(idx);           % Axial force (kips)
 materials = results.materials;
 Ec = materials.Ec;            % Concrete modulus (ksi)
 
-%% Calculate stresses at top and bottom fibers
-% Prestress stresses: f = -P/A ± P*e*y/I (compression negative)
-f_prestress_top = -P/A + P*e*yt/Ix;
-f_prestress_bot = -P/A - P*e*yb/Ix;
+%% Calculate stress components at top and bottom fibers
+% --- Prestress AXIAL component: f = -P/A (uniform compression) ---
+f_axial = -P/A;  % Same at every fiber
 
-% External load stresses: f = M*y/I
-% For positive moment (sagging): compression at top, tension at bottom
+f_axial_top = f_axial;
+f_axial_bot = f_axial;
+
+% --- Prestress BENDING component: f = P*e*y/I (linear) ---
+f_prestress_bend_top = P*e*yt/Ix;
+f_prestress_bend_bot = -P*e*yb/Ix;
+
+% --- Combined prestress (for reference) ---
+f_prestress_top = f_axial_top + f_prestress_bend_top;
+f_prestress_bot = f_axial_bot + f_prestress_bend_bot;
+
+% --- External load stresses: f = -M*y/I ---
 f_external_top = -M*yt/Ix;
 f_external_bot = M*yb/Ix;
 
-% Total stresses
+% --- Total stresses ---
 f_total_top = f_prestress_top + f_external_top;
 f_total_bot = f_prestress_bot + f_external_bot;
 
 %% Create arrays for plotting through depth
 y_from_bottom = linspace(0, yb + yt, options.num_points);  % y from bottom of section
-y_from_centroid = y_from_bottom - yb;  % y from centroid (negative below, positive above)
+y_from_centroid = y_from_bottom - yb;  % y from centroid
 
-% Linear stress distribution
-f_prestress = -P/A + P*e*y_from_centroid/Ix;
-f_external = -M*y_from_centroid/Ix;
-f_total = f_prestress + f_external;
+% Stress distributions through depth
+f_axial_arr       = -P/A * ones(size(y_from_centroid));       % Uniform axial
+f_prebend_arr     = P*e*y_from_centroid/Ix;                   % Prestress bending
+f_prestress_arr   = f_axial_arr + f_prebend_arr;              % Combined prestress
+f_external_arr    = -M*y_from_centroid/Ix;                    % External load
+f_total_arr       = f_prestress_arr + f_external_arr;         % Total
 
-% Strain distribution (elastic)
-epsilon_prestress = f_prestress / Ec;
-epsilon_external = f_external / Ec;
-epsilon_total = f_total / Ec;
+% Strain distributions (elastic)
+epsilon_axial     = f_axial_arr / Ec;
+epsilon_prebend   = f_prebend_arr / Ec;
+epsilon_prestress = f_prestress_arr / Ec;
+epsilon_external  = f_external_arr / Ec;
+epsilon_total     = f_total_arr / Ec;
 
 %% Find neutral axis location (where total stress = 0)
-% For combined axial (P) and bending (M), the stress is:
-%   f(y) = -P/A + (P*e - M)*y/I
-% where y is measured from the centroid (positive upward)
-%
-% Setting f = 0 and solving for y:
-%   y_NA = (P/A) * I / (P*e - M)  [from centroid]
-%
-% Or equivalently, the NA is where the axial stress equals the bending stress
-
-% Calculate the net moment effect (prestress moment minus external moment)
 M_net = P*e - M;  % Net moment about centroid
 
 if abs(M_net) > 1e-6
-    % Calculate NA position from centroid
     y_na_from_centroid = (P/A) * Ix / M_net;
     y_na_from_bottom = yb + y_na_from_centroid;
     
-    % Check if NA is within the section
     if y_na_from_bottom < 0 || y_na_from_bottom > (yb + yt)
         y_na_within_section = false;
     else
         y_na_within_section = true;
     end
 else
-    % Pure axial case (no net moment) - NA at infinity
     y_na_from_bottom = NaN;
     y_na_from_centroid = NaN;
     y_na_within_section = false;
 end
 
-% Also verify using interpolation (as a check)
-if f_total_top * f_total_bot < 0
-    y_na_interp = interp1(f_total, y_from_bottom, 0, 'linear');
-else
-    y_na_interp = NaN;
-end
-
 % Calculate curvature
-% φ = (ε_top - ε_bot) / h = Δf / (Ec * h)
 h_total = yb + yt;
 curvature = (f_total_top - f_total_bot) / (Ec * h_total);  % 1/in
 
@@ -172,31 +161,38 @@ if strcmp(options.plot_type, 'both') || strcmp(options.plot_type, 'stress')
     grid on;
     box on;
     
-    % Plot section outline (simplified as rectangle at centroid level)
     h_section = max(y_from_bottom);
-    fill([0, 0, 0, 0], [0, h_section, h_section, 0], [0.9, 0.9, 0.9], ...
-        'EdgeColor', 'none', 'FaceAlpha', 0.3);
     
     % Plot stress components if requested
     if options.show_components
-        h1 = plot(f_prestress, y_from_bottom, 'g-', 'LineWidth', 1.5, 'DisplayName', 'Prestress');
-        h2 = plot(f_external, y_from_bottom, 'b-', 'LineWidth', 1.5, 'DisplayName', 'External Load');
+        % Prestress axial (uniform) - dashed green
+        h1 = plot(f_axial_arr, y_from_bottom, 'g--', 'LineWidth', 1.5, ...
+            'DisplayName', 'Prestress Axial (-P/A)');
+        
+        % Prestress bending (linear) - dash-dot green
+        h2 = plot(f_prebend_arr, y_from_bottom, 'g-.', 'LineWidth', 1.5, ...
+            'DisplayName', 'Prestress Bending (Pe \cdot y/I)');
+        
+        % Combined prestress - solid green
+        h3 = plot(f_prestress_arr, y_from_bottom, 'g-', 'LineWidth', 2, ...
+            'DisplayName', 'Prestress Combined');
+        
+        % External load - blue
+        h4 = plot(f_external_arr, y_from_bottom, 'b-', 'LineWidth', 1.5, ...
+            'DisplayName', 'External Load (-My/I)');
     end
     
-    % Plot total stress
-    h3 = plot(f_total, y_from_bottom, 'r-', 'LineWidth', 2.5, 'DisplayName', 'Total');
+    % Plot total stress - red, thickest
+    h5 = plot(f_total_arr, y_from_bottom, 'r-', 'LineWidth', 2.5, 'DisplayName', 'Total');
     
-    % Fill compression and tension regions
-    f_pos = max(f_total, 0);
-    f_neg = min(f_total, 0);
+    % Fill compression and tension regions for total
+    f_pos = max(f_total_arr, 0);
+    f_neg = min(f_total_arr, 0);
     
-    % Tension region (positive stress) - light red
     fill([f_pos, zeros(size(f_pos))], [y_from_bottom, fliplr(y_from_bottom)], ...
-        [1, 0.7, 0.7], 'FaceAlpha', 0.3, 'EdgeColor', 'none');
-    
-    % Compression region (negative stress) - light blue
+        [1, 0.7, 0.7], 'FaceAlpha', 0.2, 'EdgeColor', 'none');
     fill([f_neg, zeros(size(f_neg))], [y_from_bottom, fliplr(y_from_bottom)], ...
-        [0.7, 0.7, 1], 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        [0.7, 0.7, 1], 'FaceAlpha', 0.2, 'EdgeColor', 'none');
     
     % Zero line
     plot([0, 0], [0, h_section], 'k-', 'LineWidth', 1);
@@ -213,7 +209,6 @@ if strcmp(options.plot_type, 'both') || strcmp(options.plot_type, 'stress')
             'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right', ...
             'FontSize', 9, 'Color', 'm', 'FontWeight', 'bold');
     elseif ~isnan(y_na_from_bottom)
-        % NA exists but is outside section - indicate direction
         if y_na_from_bottom < 0
             text(0.5, 0.05, sprintf('N.A. @ %.1f in (below section)', y_na_from_bottom), ...
                 'Units', 'normalized', 'FontSize', 8, 'Color', 'm', ...
@@ -228,15 +223,13 @@ if strcmp(options.plot_type, 'both') || strcmp(options.plot_type, 'stress')
     % Allowable stress limits
     if options.show_limits
         stresses = results.stresses;
-        fc_comp = stresses.fc_allow_compression;  % Compression limit (negative)
-        fc_tens = stresses.fc_allow_tension;      % Tension limit (positive)
+        fc_comp = stresses.fc_allow_compression;
+        fc_tens = stresses.fc_allow_tension;
         
-        % Compression limit line
         plot([fc_comp, fc_comp], [0, h_section], 'k:', 'LineWidth', 1.5);
         text(fc_comp, h_section*0.02, sprintf(' f''_c = %.2f ksi', fc_comp), ...
             'VerticalAlignment', 'bottom', 'FontSize', 8, 'Rotation', 90);
         
-        % Tension limit line
         plot([fc_tens, fc_tens], [0, h_section], 'k:', 'LineWidth', 1.5);
         text(fc_tens, h_section*0.02, sprintf(' f_r = %.3f ksi', fc_tens), ...
             'VerticalAlignment', 'bottom', 'FontSize', 8, 'Rotation', 90);
@@ -256,24 +249,26 @@ if strcmp(options.plot_type, 'both') || strcmp(options.plot_type, 'stress')
     
     % Legend
     if options.show_components
-        legend([h1, h2, h3], {'Prestress', 'External Load', 'Total'}, ...
-            'Location', 'best', 'FontSize', 9);
+        legend([h1, h2, h3, h4, h5], ...
+            {'Prestress Axial (-P/A)', 'Prestress Bending (Pe \cdot y/I)', ...
+             'Prestress Combined', 'External Load (-My/I)', 'Total'}, ...
+            'Location', 'best', 'FontSize', 8);
     else
-        legend(h3, {'Total'}, 'Location', 'best', 'FontSize', 9);
+        legend(h5, {'Total'}, 'Location', 'best', 'FontSize', 9);
     end
     
-    % Add text box with key values
+    % Add text box with key values (now includes axial/bending breakdown)
     info_str = sprintf(['P = %.1f kips\n' ...
                        'e = %.2f in\n' ...
+                       '-P/A = %.4f ksi\n' ...
+                       'Pe = %.0f kip-in\n' ...
                        'M_{ext} = %.0f kip-in\n' ...
-                       'M_{net} = %.0f kip-in\n' ...
                        'f_{top} = %.3f ksi\n' ...
                        'f_{bot} = %.3f ksi\n' ...
-                       'φ = %.2e 1/in'], ...
-                       P, e, M, M_net, f_total_top, f_total_bot, curvature);
+                       '\x03c6 = %.2e 1/in'], ...
+                       P, e, f_axial, P*e, M, f_total_top, f_total_bot, curvature);
     
-    % Position text box in upper left or right depending on stress direction
-    if mean(f_total) < 0
+    if mean(f_total_arr) < 0
         text_x = 0.98;
         text_ha = 'right';
     else
@@ -281,7 +276,6 @@ if strcmp(options.plot_type, 'both') || strcmp(options.plot_type, 'stress')
         text_ha = 'left';
     end
     
-    annotation_axes = gca;
     text(text_x, 0.98, info_str, 'Units', 'normalized', ...
         'VerticalAlignment', 'top', 'HorizontalAlignment', text_ha, ...
         'FontSize', 9, 'BackgroundColor', 'w', 'EdgeColor', 'k', ...
@@ -303,33 +297,44 @@ if strcmp(options.plot_type, 'both') || strcmp(options.plot_type, 'strain')
     box on;
     
     % Convert to microstrain for readability
+    epsilon_axial_mu     = epsilon_axial * 1e6;
+    epsilon_prebend_mu   = epsilon_prebend * 1e6;
     epsilon_prestress_mu = epsilon_prestress * 1e6;
-    epsilon_external_mu = epsilon_external * 1e6;
-    epsilon_total_mu = epsilon_total * 1e6;
+    epsilon_external_mu  = epsilon_external * 1e6;
+    epsilon_total_mu     = epsilon_total * 1e6;
     
     h_section = max(y_from_bottom);
     
-    % Plot section outline
-    fill([0, 0, 0, 0], [0, h_section, h_section, 0], [0.9, 0.9, 0.9], ...
-        'EdgeColor', 'none', 'FaceAlpha', 0.3);
-    
     % Plot strain components if requested
     if options.show_components
-        h1 = plot(epsilon_prestress_mu, y_from_bottom, 'g-', 'LineWidth', 1.5, 'DisplayName', 'Prestress');
-        h2 = plot(epsilon_external_mu, y_from_bottom, 'b-', 'LineWidth', 1.5, 'DisplayName', 'External Load');
+        % Prestress axial (uniform) - dashed green
+        h1 = plot(epsilon_axial_mu, y_from_bottom, 'g--', 'LineWidth', 1.5, ...
+            'DisplayName', 'Prestress Axial');
+        
+        % Prestress bending (linear) - dash-dot green
+        h2 = plot(epsilon_prebend_mu, y_from_bottom, 'g-.', 'LineWidth', 1.5, ...
+            'DisplayName', 'Prestress Bending');
+        
+        % Combined prestress - solid green
+        h3 = plot(epsilon_prestress_mu, y_from_bottom, 'g-', 'LineWidth', 2, ...
+            'DisplayName', 'Prestress Combined');
+        
+        % External load - blue
+        h4 = plot(epsilon_external_mu, y_from_bottom, 'b-', 'LineWidth', 1.5, ...
+            'DisplayName', 'External Load');
     end
     
-    % Plot total strain
-    h3 = plot(epsilon_total_mu, y_from_bottom, 'r-', 'LineWidth', 2.5, 'DisplayName', 'Total');
+    % Plot total strain - red
+    h5 = plot(epsilon_total_mu, y_from_bottom, 'r-', 'LineWidth', 2.5, 'DisplayName', 'Total');
     
     % Fill tension and compression regions
     eps_pos = max(epsilon_total_mu, 0);
     eps_neg = min(epsilon_total_mu, 0);
     
     fill([eps_pos, zeros(size(eps_pos))], [y_from_bottom, fliplr(y_from_bottom)], ...
-        [1, 0.7, 0.7], 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        [1, 0.7, 0.7], 'FaceAlpha', 0.2, 'EdgeColor', 'none');
     fill([eps_neg, zeros(size(eps_neg))], [y_from_bottom, fliplr(y_from_bottom)], ...
-        [0.7, 0.7, 1], 'FaceAlpha', 0.3, 'EdgeColor', 'none');
+        [0.7, 0.7, 1], 'FaceAlpha', 0.2, 'EdgeColor', 'none');
     
     % Zero line
     plot([0, 0], [0, h_section], 'k-', 'LineWidth', 1);
@@ -351,34 +356,35 @@ if strcmp(options.plot_type, 'both') || strcmp(options.plot_type, 'strain')
     eps_top = epsilon_total_mu(end);
     eps_bot = epsilon_total_mu(1);
     
-    text(eps_top, h_section, sprintf('  %.0f με', eps_top), ...
+    text(eps_top, h_section, sprintf('  %.0f \x03bc\x03b5', eps_top), ...
         'VerticalAlignment', 'middle', 'FontSize', 10, 'FontWeight', 'bold', 'Color', 'r');
-    text(eps_bot, 0, sprintf('  %.0f με', eps_bot), ...
+    text(eps_bot, 0, sprintf('  %.0f \x03bc\x03b5', eps_bot), ...
         'VerticalAlignment', 'middle', 'FontSize', 10, 'FontWeight', 'bold', 'Color', 'r');
     
-    % Reference strain limits
-    % Concrete crushing strain (approximately 0.003 = 3000 με)
+    % Crushing strain limit
     eps_crush = -3000;
     plot([eps_crush, eps_crush], [0, h_section], 'k:', 'LineWidth', 1.5);
-    text(eps_crush, h_section*0.02, ' ε_cu = -3000 με', ...
+    text(eps_crush, h_section*0.02, ' \epsilon_{cu} = -3000 \mu\epsilon', ...
         'VerticalAlignment', 'bottom', 'FontSize', 8, 'Rotation', 90);
     
     % Labels
-    xlabel('Strain, ε (microstrain)', 'FontSize', 11);
+    xlabel('Strain, \epsilon (microstrain)', 'FontSize', 11);
     ylabel('Distance from bottom (in)', 'FontSize', 11);
     title('Strain Distribution', 'FontWeight', 'bold', 'FontSize', 12);
     
     % Legend
     if options.show_components
-        legend([h1, h2, h3], {'Prestress', 'External Load', 'Total'}, ...
-            'Location', 'best', 'FontSize', 9);
+        legend([h1, h2, h3, h4, h5], ...
+            {'Prestress Axial', 'Prestress Bending', ...
+             'Prestress Combined', 'External Load', 'Total'}, ...
+            'Location', 'best', 'FontSize', 8);
     else
-        legend(h3, {'Total'}, 'Location', 'best', 'FontSize', 9);
+        legend(h5, {'Total'}, 'Location', 'best', 'FontSize', 9);
     end
     
-    % Add text box with key values
-    info_str = sprintf(['ε_{top} = %.0f με\n' ...
-                       'ε_{bot} = %.0f με\n' ...
+    % Add text box
+    info_str = sprintf(['\x03b5_{top} = %.0f \x03bc\x03b5\n' ...
+                       '\x03b5_{bot} = %.0f \x03bc\x03b5\n' ...
                        'E_c = %.0f ksi'], ...
                        eps_top, eps_bot, Ec);
     
@@ -417,17 +423,20 @@ fprintf('  Eccentricity e = %.2f in\n', e);
 fprintf('  Prestress Moment M_p = P*e = %.0f kip-in\n', P*e);
 fprintf('  External Moment M_ext = %.0f kip-in\n', M);
 fprintf('  Net Moment M_net = P*e - M = %.0f kip-in\n', M_net);
-fprintf('\nStresses (compression negative):\n');
-fprintf('  Top fiber:    f = %.4f ksi (%.0f με)\n', f_total_top, f_total_top/Ec*1e6);
-fprintf('  Bottom fiber: f = %.4f ksi (%.0f με)\n', f_total_bot, f_total_bot/Ec*1e6);
-fprintf('  Prestress component (f = -P/A ± P*e*y/I):\n');
-fprintf('    Top:    %.4f ksi\n', f_prestress_top);
-fprintf('    Bottom: %.4f ksi\n', f_prestress_bot);
-fprintf('  External load component (f = -M*y/I):\n');
-fprintf('    Top:    %.4f ksi\n', f_external_top);
-fprintf('    Bottom: %.4f ksi\n', f_external_bot);
+fprintf('\nPrestress Stress Components:\n');
+fprintf('  Axial (-P/A):                  %.4f ksi (uniform)\n', f_axial);
+fprintf('  Bending at top (+P*e*yt/I):    %.4f ksi\n', f_prestress_bend_top);
+fprintf('  Bending at bot (-P*e*yb/I):    %.4f ksi\n', f_prestress_bend_bot);
+fprintf('  Combined prestress at top:     %.4f ksi\n', f_prestress_top);
+fprintf('  Combined prestress at bot:     %.4f ksi\n', f_prestress_bot);
+fprintf('\nExternal Load Stresses (-M*y/I):\n');
+fprintf('  Top:    %.4f ksi\n', f_external_top);
+fprintf('  Bottom: %.4f ksi\n', f_external_bot);
+fprintf('\nTotal Stresses:\n');
+fprintf('  Top fiber:    f = %.4f ksi (%.0f microstrain)\n', f_total_top, f_total_top/Ec*1e6);
+fprintf('  Bottom fiber: f = %.4f ksi (%.0f microstrain)\n', f_total_bot, f_total_bot/Ec*1e6);
 fprintf('\nNeutral Axis (where f = 0):\n');
-fprintf('  y_NA from centroid = (P/A)*I/(P*e-M) = %.2f in\n', y_na_from_centroid);
+fprintf('  y_NA from centroid = %.2f in\n', y_na_from_centroid);
 fprintf('  y_NA from bottom = %.2f in\n', y_na_from_bottom);
 if y_na_within_section
     fprintf('  Status: Within section\n');
@@ -443,7 +452,7 @@ else
     end
 end
 fprintf('\nCurvature:\n');
-fprintf('  φ = %.4e 1/in = %.4f 1/ft\n', curvature, curvature*12);
+fprintf('  phi = %.4e 1/in = %.4f 1/ft\n', curvature, curvature*12);
 fprintf('========================================\n\n');
 
 end
