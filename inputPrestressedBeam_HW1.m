@@ -93,7 +93,7 @@ tendon1.bonding.bonded_zones = [0, 1.0];  % [start, end] as fraction of L
 
 % Combine tendons
 prestress.tendons = {tendon1};
-prestress.losses = 0.15;        % Total prestress losses as fraction (15%)
+prestress.losses = 0.0; %0.15;        % Total prestress losses as fraction (15%)
 
 %% SECTION 5: NON-PRESTRESSED REINFORCEMENT
 % Define mild steel reinforcement (if any)
