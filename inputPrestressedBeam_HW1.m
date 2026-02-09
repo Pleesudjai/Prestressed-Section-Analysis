@@ -73,19 +73,72 @@ materials.Es = 29000;           % Modulus of elasticity of mild steel (ksi)
 fpi = 0.75 * materials.fpu;     % Initial prestress (ksi)
 Aps_required = 400 / fpi ;       % Area required for 400 kips (in^2)
 
-% Tendon 1 - Straight profile at y=6 (fully bonded)
+% =====================================================================
+% TENDON PROFILE TYPES - Choose one of the following:
+%
+%   'straight'       - Constant y-position along beam
+%                      Requires: y_position
+%
+%   'linear'         - Linear y variation from start to end
+%                      Requires: e_start, e_end (eccentricities)
+%
+%   'parabolic'      - Parabolic eccentricity: e(x) = ax^2 + bx + c
+%                      Requires: e_start, e_mid, e_end
+%
+%   'parabolic_y'    - Parabolic y-coordinate: y(x) = a*x^2 + b*x + c
+%                      Requires: y_coeffs = [a, b, c]
+%                      Example: y = -0.001*x^2 + 0.1*x + 6
+%
+%   'parabolic_3pt'  - Parabolic y from 3 control points
+%                      Requires: y_start, y_mid, y_end
+%                      Fits y(x) = a*x^2 + b*x + c through the 3 points
+%
+%   'harped'         - Two linear segments meeting at drape point
+%                      Requires: e_start, e_mid, e_end, drape_point
+%
+%   'custom'         - User-defined profile
+%                      Requires: x_profile, e_profile (vectors)
+% =====================================================================
+
+% Tendon 1 - Choose profile type here
 tendon1.Aps = Aps_required;     % Area of prestressing steel (in^2)
 tendon1.fpi = fpi;              % Initial prestress (ksi)
-tendon1.profile_type = 'linear'; % Straight tendon
-tendon1.x_position = 0;         % x-coordinate of tendon (in)
-tendon1.y_position = 6;         % y-coordinate of tendon from bottom (in)
 
-% Eccentricity will be calculated as: e = yc - y_tendon
-% For straight profile, e is constant along the beam
-tendon1.e_start = [];           % Will be calculated from y_position
-tendon1.e_mid = [];             % Will be calculated from y_position
-tendon1.e_end = [];             % Will be calculated from y_position
-tendon1.drape_point = [];       % Not applicable for straight profile
+% --- ACTIVE PROFILE (uncomment ONE block below) ---
+
+% % OPTION A: Straight tendon at constant y
+% tendon1.profile_type = 'straight';
+% tendon1.y_position = 6;         % y-coordinate of tendon from bottom (in)
+
+% OPTION B: Parabolic y-coordinate using coefficients y = a*x^2 + b*x + c
+tendon1.profile_type = 'parabolic_y';
+tendon1.y_coeffs = [1, 0, 0];  % [a, b, c] -> y = a*x^2 + b*x + c
+  % This example: y(0)=6, y(50)=10, y(100)=6 in
+
+% % OPTION C: Parabolic y from 3 control points (start, midspan, end)
+% tendon1.profile_type = 'parabolic_3pt';
+% tendon1.y_start = 6;           % y at x = 0
+% tendon1.y_mid   = 10;          % y at x = L/2
+% tendon1.y_end   = 6;           % y at x = L
+
+% % OPTION D: Parabolic eccentricity e(x) = ax^2 + bx + c
+% tendon1.profile_type = 'parabolic';
+% tendon1.e_start = 30;          % Eccentricity at x = 0
+% tendon1.e_mid   = 35;          % Eccentricity at x = L/2
+% tendon1.e_end   = 30;          % Eccentricity at x = L
+
+% % OPTION E: Harped profile
+% tendon1.profile_type = 'harped';
+% tendon1.e_start = 10;
+% tendon1.e_mid   = 35;
+% tendon1.e_end   = 10;
+% tendon1.drape_point = 0.5;     % Fraction of L where drape occurs
+
+% Common fields (defaults for unused options)
+if ~isfield(tendon1, 'e_start'), tendon1.e_start = []; end
+if ~isfield(tendon1, 'e_mid'),   tendon1.e_mid = [];   end
+if ~isfield(tendon1, 'e_end'),   tendon1.e_end = [];   end
+if ~isfield(tendon1, 'drape_point'), tendon1.drape_point = []; end
 
 % Bonding information for Tendon 1 - FULLY BONDED
 tendon1.bonding.type = 'full';
@@ -216,6 +269,15 @@ end
 
 function prestress = processTendonProfiles(prestress, beam, section)
 % Generate eccentricity profile along beam length for each tendon
+%
+% Supported profile_type values:
+%   'straight'      - Constant y_position
+%   'linear'        - Linear eccentricity from e_start to e_end
+%   'parabolic'     - Parabolic eccentricity from e_start, e_mid, e_end
+%   'parabolic_y'   - Parabolic y(x) = a*x^2 + b*x + c via y_coeffs
+%   'parabolic_3pt' - Parabolic y fitted through y_start, y_mid, y_end
+%   'harped'        - Two linear segments with drape point
+%   'custom'        - User-defined e_profile and x_profile vectors
 
 x = beam.x;
 L = beam.L;
@@ -224,66 +286,132 @@ yc = section.yc;
 for i = 1:length(prestress.tendons)
     tendon = prestress.tendons{i};
     
-    % For straight tendon at fixed y-position
-    if isfield(tendon, 'y_position') && ~isempty(tendon.y_position)
-        % Calculate constant eccentricity: e = yc - y_tendon
-        e_constant = yc - tendon.y_position;
+    switch tendon.profile_type
         
-        % Set all eccentricities to constant value
-        tendon.e_start = e_constant;
-        tendon.e_mid = e_constant;
-        tendon.e_end = e_constant;
-        
-        % Create constant eccentricity profile
-        e = ones(size(x)) * e_constant;
-        
-        % Store y-coordinate
-        y_tendon = ones(size(x)) * tendon.y_position;
-    else
-        % Use provided eccentricity values
-        e_s = tendon.e_start;
-        e_m = tendon.e_mid;
-        e_e = tendon.e_end;
-        
-        switch tendon.profile_type
-            case 'linear'
-                % Linear variation from start to end
+        case 'straight'
+            % Constant y-position along beam
+            y_tendon = ones(size(x)) * tendon.y_position;
+            e = yc - y_tendon;
+            
+            % Store eccentricity summary values
+            tendon.e_start = e(1);
+            tendon.e_mid = e(round(end/2));
+            tendon.e_end = e(end);
+            
+        case 'parabolic_y'
+            % y(x) = a*x^2 + b*x + c  (direct coefficient input)
+            a_coeff = tendon.y_coeffs(1);
+            b_coeff = tendon.y_coeffs(2);
+            c_coeff = tendon.y_coeffs(3);
+            
+            y_tendon = a_coeff * x.^2 + b_coeff * x + c_coeff;
+            e = yc - y_tendon;
+            
+            tendon.e_start = e(1);
+            tendon.e_mid = e(round(end/2));
+            tendon.e_end = e(end);
+            
+            fprintf('  Tendon %d (parabolic_y): y = %.6f*x^2 + %.4f*x + %.2f\n', ...
+                i, a_coeff, b_coeff, c_coeff);
+            fprintf('    y(0)=%.2f, y(L/2)=%.2f, y(L)=%.2f in\n', ...
+                y_tendon(1), y_tendon(round(end/2)), y_tendon(end));
+            
+        case 'parabolic_3pt'
+            % Fit y(x) = a*x^2 + b*x + c through 3 points:
+            %   y(0) = y_start,  y(L/2) = y_mid,  y(L) = y_end
+            y0 = tendon.y_start;
+            ym = tendon.y_mid;
+            yL = tendon.y_end;
+            
+            % Solve: c = y0
+            %        a*(L/2)^2 + b*(L/2) + c = ym
+            %        a*L^2     + b*L     + c = yL
+            c_coeff = y0;
+            % From the two remaining equations:
+            %   a*L^2/4 + b*L/2 = ym - y0
+            %   a*L^2   + b*L   = yL - y0
+            % Multiply first by 2: a*L^2/2 + b*L = 2*(ym - y0)
+            % Subtract from second: a*L^2/2 = (yL - y0) - 2*(ym - y0)
+            a_coeff = 2 * (y0 - 2*ym + yL) / L^2;
+            b_coeff = (yL - y0) / L - a_coeff * L;
+            
+            y_tendon = a_coeff * x.^2 + b_coeff * x + c_coeff;
+            e = yc - y_tendon;
+            
+            tendon.e_start = e(1);
+            tendon.e_mid = e(round(end/2));
+            tendon.e_end = e(end);
+            
+            tendon.y_coeffs = [a_coeff, b_coeff, c_coeff];
+            
+            fprintf('  Tendon %d (parabolic_3pt): y = %.6f*x^2 + %.4f*x + %.2f\n', ...
+                i, a_coeff, b_coeff, c_coeff);
+            fprintf('    y(0)=%.2f, y(L/2)=%.2f, y(L)=%.2f in\n', ...
+                y_tendon(1), y_tendon(round(end/2)), y_tendon(end));
+            
+        case 'linear'
+            % Linear eccentricity variation
+            if isfield(tendon, 'y_position') && ~isempty(tendon.y_position)
+                % Straight tendon (backward compatibility)
+                e_constant = yc - tendon.y_position;
+                e = ones(size(x)) * e_constant;
+                y_tendon = ones(size(x)) * tendon.y_position;
+                tendon.e_start = e_constant;
+                tendon.e_mid = e_constant;
+                tendon.e_end = e_constant;
+            else
+                e_s = tendon.e_start;
+                e_e = tendon.e_end;
                 e = e_s + (e_e - e_s) * x / L;
-                
-            case 'parabolic'
-                % Parabolic profile: e(x) = ax^2 + bx + c
-                % Boundary conditions: e(0)=e_s, e(L/2)=e_m, e(L)=e_e
-                a = 2 * (e_s - 2*e_m + e_e) / L^2;
-                b = (e_e - e_s) / L - a * L;
-                c = e_s;
-                e = a * x.^2 + b * x + c;
-                
-            case 'harped'
-                % Harped profile: linear segments meeting at drape point
-                x_drape = tendon.drape_point * L;
-                e = zeros(size(x));
-                mask1 = x <= x_drape;
-                mask2 = x > x_drape;
-                e(mask1) = e_s + (e_m - e_s) * x(mask1) / x_drape;
-                e(mask2) = e_m + (e_e - e_m) * (x(mask2) - x_drape) / (L - x_drape);
-                
-            case 'custom'
-                % User-defined profile (requires tendon.e_profile field)
-                if isfield(tendon, 'e_profile')
-                    e = interp1(tendon.x_profile, tendon.e_profile, x, 'linear');
-                else
-                    error('Custom profile requires e_profile and x_profile fields');
-                end
-                
-            otherwise
-                error('Unknown profile type: %s', tendon.profile_type);
-        end
-        
-        % Calculate tendon y-coordinate from bottom
-        y_tendon = yc - e;
+                y_tendon = yc - e;
+                tendon.e_mid = (e_s + e_e) / 2;
+            end
+            
+        case 'parabolic'
+            % Parabolic eccentricity: e(x) = ax^2 + bx + c
+            % Boundary conditions: e(0)=e_s, e(L/2)=e_m, e(L)=e_e
+            e_s = tendon.e_start;
+            e_m = tendon.e_mid;
+            e_e = tendon.e_end;
+            
+            a = 2 * (e_s - 2*e_m + e_e) / L^2;
+            b = (e_e - e_s) / L - a * L;
+            c = e_s;
+            e = a * x.^2 + b * x + c;
+            y_tendon = yc - e;
+            
+        case 'harped'
+            % Harped profile: linear segments meeting at drape point
+            e_s = tendon.e_start;
+            e_m = tendon.e_mid;
+            e_e = tendon.e_end;
+            x_drape = tendon.drape_point * L;
+            
+            e = zeros(size(x));
+            mask1 = x <= x_drape;
+            mask2 = x > x_drape;
+            e(mask1) = e_s + (e_m - e_s) * x(mask1) / x_drape;
+            e(mask2) = e_m + (e_e - e_m) * (x(mask2) - x_drape) / (L - x_drape);
+            y_tendon = yc - e;
+            
+        case 'custom'
+            % User-defined profile (requires tendon.e_profile and x_profile)
+            if isfield(tendon, 'e_profile')
+                e = interp1(tendon.x_profile, tendon.e_profile, x, 'linear');
+                y_tendon = yc - e;
+                tendon.e_start = e(1);
+                tendon.e_mid = e(round(end/2));
+                tendon.e_end = e(end);
+            else
+                error('Custom profile requires e_profile and x_profile fields');
+            end
+            
+        otherwise
+            error('Unknown profile type: %s', tendon.profile_type);
     end
     
     % Store eccentricity profile (positive = below centroid)
+    prestress.tendons{i} = tendon;
     prestress.tendons{i}.e = e;
     
     % Store tendon y-coordinate
@@ -355,14 +483,26 @@ for i = 1:length(prestress.tendons)
     fprintf('    Aps = %.3f in^2\n', t.Aps);
     fprintf('    fpi = %.1f ksi\n', t.fpi);
     fprintf('    Initial force (P) = %.1f kips\n', P_initial);
-    if isfield(t, 'y_position')
-        fprintf('    Location: (x=%.1f, y=%.1f) in\n', t.x_position, t.y_position);
-        fprintf('    Eccentricity: e = %.2f in (constant)\n', t.e_start);
-    else
-        fprintf('    Profile: %s\n', t.profile_type);
-        fprintf('    Eccentricity: %.2f in (start) to %.2f in (mid) to %.2f in (end)\n', ...
-            t.e_start, t.e_mid, t.e_end);
+    fprintf('    Profile type: %s\n', t.profile_type);
+    
+    switch t.profile_type
+        case 'straight'
+            fprintf('    Location: y = %.1f in (constant)\n', t.y_position);
+            fprintf('    Eccentricity: e = %.2f in (constant)\n', t.e_start);
+        case {'parabolic_y', 'parabolic_3pt'}
+            if isfield(t, 'y_coeffs')
+                fprintf('    y(x) = %.6f*x^2 + %.4f*x + %.2f\n', ...
+                    t.y_coeffs(1), t.y_coeffs(2), t.y_coeffs(3));
+            end
+            fprintf('    y: %.2f in (start) to %.2f in (mid) to %.2f in (end)\n', ...
+                t.y(1), t.y(round(end/2)), t.y(end));
+            fprintf('    Eccentricity: %.2f in (start) to %.2f in (mid) to %.2f in (end)\n', ...
+                t.e_start, t.e_mid, t.e_end);
+        otherwise
+            fprintf('    Eccentricity: %.2f in (start) to %.2f in (mid) to %.2f in (end)\n', ...
+                t.e_start, t.e_mid, t.e_end);
     end
+    
     fprintf('    Bonding: %s\n', t.bonding.type);
     total_Aps = total_Aps + t.Aps;
     total_P = total_P + P_initial;
