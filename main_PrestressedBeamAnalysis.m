@@ -11,7 +11,7 @@
 %   3. Results and plots will be generated automatically
 
 clear; clc; close all;
-
+My_data  = 'HW_2';
 %% Load input data
 fprintf('Loading input data...\n');
 [beam, section, materials, prestress, reinforcement, loads] = inputPrestressedBeam_HW1();
@@ -77,25 +77,44 @@ section_options.show_dimensions = true;
 section_options.show_properties = true;
 plotSection(section, prestress, reinforcement, materials, section_options);
 
-% Cross-section at support (different tendon position)
-figure;
-section_options.x_location = 0.0;  % At support
+% Cross-section at 0.75
+section_options.beam = beam;
+section_options.x_location = 0.75;  % Midspan
 section_options.show_dimensions = true;
+section_options.show_properties = true;
 plotSection(section, prestress, reinforcement, materials, section_options);
-title('Cross-Section at Support (x = 0)', 'FontWeight', 'bold');
 
+% Cross-section at 1.00
+section_options.beam = beam;
+section_options.x_location = 1.0;  % Midspan
+section_options.show_dimensions = true;
+section_options.show_properties = true;
+plotSection(section, prestress, reinforcement, materials, section_options);
+
+% % Cross-section at support (different tendon position)
+% figure;
+% section_options.x_location = 1.0;  % At support
+% section_options.show_dimensions = true;
+% plotSection(section, prestress, reinforcement, materials, section_options);
+% title('Cross-Section at Support (x = 0)', 'FontWeight', 'bold');
 
 % At midspan (using fraction)
 plotSectionStressStrain(results, 0.5);
 
-% At specific location (in inches)
-plotSectionStressStrain(results, 300);
+% At midspan (using fraction)
+plotSectionStressStrain(results, 0.75);
 
-% With options
-options.plot_type = 'both';        % 'stress', 'strain', or 'both'
-options.show_components = true;    % Show prestress/external separately
-options.show_limits = true;        % Show allowable stress limits
-plotSectionStressStrain(results, 0.5, options);
+% At midspan (using fraction)
+plotSectionStressStrain(results, 1.0);
+
+% % At specific location (in inches)
+% plotSectionStressStrain(results, 300);
+
+% % With options
+% options.plot_type = 'both';        % 'stress', 'strain', or 'both'
+% options.show_components = true;    % Show prestress/external separately
+% options.show_limits = true;        % Show allowable stress limits
+% plotSectionStressStrain(results, 0.5, options);
 
 %% Export results to workspace
 fprintf('\nResults saved to workspace variable: results\n');
@@ -109,3 +128,49 @@ end
 fprintf('\n========================================\n');
 fprintf('Analysis complete!\n');
 fprintf('========================================\n');
+
+
+
+
+%% ========================================================================
+%%Step 7                          SAVE ALL FIGURES
+%% ========================================================================
+
+% Get all figure handles
+fig_handles = findall(0, 'Type', 'figure');
+
+% Create output directory if it doesn't exist
+output_dir = My_data;
+if ~exist(output_dir, 'dir')
+    mkdir(output_dir);
+end
+
+% Save each figure
+for i = 1:length(fig_handles)
+    fig_num = fig_handles(i).Number;
+    fig_name = sprintf('Figure_%d', fig_num);
+
+    % Try to get a more descriptive name from the figure title
+    if ~isempty(fig_handles(i).Children)
+        try
+            title_obj = get(fig_handles(i).Children(1), 'Title');
+            if ~isempty(title_obj) && ~isempty(title_obj.String)
+                title_str = title_obj.String;
+                % Clean title for filename (remove special characters)
+                title_str = regexprep(title_str, '[^\w\s-]', '');
+                title_str = regexprep(title_str, '\s+', '_');
+                fig_name = sprintf('Figure_%d_%s', fig_num, title_str);
+            end
+        catch
+            % Use default name if title extraction fails
+        end
+    end
+
+    % Save in multiple formats
+    figure(fig_handles(i));
+    saveas(fig_handles(i), fullfile(output_dir, [fig_name '.png']));
+    savefig(fig_handles(i), fullfile(output_dir, [fig_name '.fig']));
+    fprintf('Saved: %s\n', fig_name);
+end
+
+fprintf('Total: %d figures saved to %s directory.\n', length(fig_handles), output_dir);

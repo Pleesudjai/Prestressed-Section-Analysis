@@ -95,8 +95,8 @@ Aps_required = 400 / fpi;
 % =====================================================================
 
 % --- Concrete cover requirements ---
-tendon1.cover_bot = 3.0;        % Min cover from bottom fiber (in)
-tendon1.cover_top = 3.0;        % Min cover from top fiber (in)
+tendon1.cover_bot = 6.0;        % Min cover from bottom fiber (in)
+tendon1.cover_top = 6.0;        % Min cover from top fiber (in)
 
 % --- Tendon properties ---
 tendon1.Aps = Aps_required;
