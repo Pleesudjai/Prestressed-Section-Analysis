@@ -66,6 +66,9 @@ P = results.P(idx);           % Effective prestress force (kips)
 e = results.e(idx);           % Eccentricity (in)
 M = results.M(idx);           % External moment (kip-in)
 N = results.N(idx);           % Axial force (kips)
+w_total = results.w(idx);
+w_dead = results.w_dead(idx);
+w_live = results.w_live(idx);
 
 %% Get material properties
 materials = results.materials;
@@ -438,6 +441,11 @@ fprintf('  Bottom fiber: f = %.4f ksi (%.0f microstrain)\n', f_total_bot, f_tota
 fprintf('\nNeutral Axis (where f = 0):\n');
 fprintf('  y_NA from centroid = %.2f in\n', y_na_from_centroid);
 fprintf('  y_NA from bottom = %.2f in\n', y_na_from_bottom);
+fprintf('\nDistributed Load at x = %.1f in:\n', x_actual);
+fprintf('  w_dead = %.6f kip/in (%.4f kip/ft)\n', w_dead, w_dead*12);
+fprintf('  w_live = %.6f kip/in (%.4f kip/ft)\n', w_live, w_live*12);
+fprintf('  w_total = %.6f kip/in (%.4f kip/ft)\n', w_total, w_total*12);
+fprintf('  External Moment M at x = %.1f in: %.4f kip-in (%.4f kip-ft)\n', x_actual, M, M/12);
 if y_na_within_section
     fprintf('  Status: Within section\n');
 else

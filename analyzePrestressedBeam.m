@@ -58,7 +58,7 @@ results.M_live = zeros(1, n);
 
 %% Calculate self-weight if not provided
 if isempty(loads.self_weight)
-    loads.self_weight = section.A * loads.concrete_density;
+    loads.self_weight = section.A * loads.concrete_density/1000; %kip
 end
 
 %% Calculate prestress effects
@@ -66,7 +66,7 @@ end
     calculatePrestressEffects(beam, section, prestress);
 
 %% Calculate reactions and internal forces
-[results.V, results.M, results.V_dead, results.V_live, results.M_dead, results.M_live, results.reactions] = ...
+[results.V, results.M, results.V_dead, results.V_live, results.M_dead, results.M_live, results.reactions,results.w, results.w_dead, results.w_live] = ...
     calculateInternalForces(beam, loads, section);
 
 %% Combine effects - Axial force from prestress
@@ -149,7 +149,7 @@ end
 end
 
 %% INTERNAL FORCES - CORRECTED BOUNDARY CONDITIONS
-function [V, M, V_dead, V_live, M_dead, M_live, reactions] = calculateInternalForces(beam, loads, section)
+function [V, M, V_dead, V_live, M_dead, M_live, reactions,w, w_dead, w_live] = calculateInternalForces(beam, loads, section)
 % Calculate shear and moment diagrams from applied loads
 % CORRECTED: Proper boundary conditions for simple support
 

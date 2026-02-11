@@ -11,7 +11,7 @@
 %   3. Results and plots will be generated automatically
 
 clear; clc; close all;
-My_data  = 'HW_2';
+My_data  = 'HW_2_new';
 %% Load input data
 fprintf('Loading input data...\n');
 [beam, section, materials, prestress, reinforcement, loads] = inputPrestressedBeam_HW1();

@@ -10,7 +10,7 @@ function [beam, section, materials, prestress, reinforcement, loads] = inputPres
 %   - Ec = 4700 ksi
 
 %% SECTION 1: BEAM GEOMETRY
-beam.L = 100;                   % Total beam length (in)
+beam.L = 100*12;                   % Total beam length (in)
 beam.num_segments = 100;        % Number of segments for analysis
 beam.x = linspace(0, beam.L, beam.num_segments + 1);
 
@@ -183,7 +183,7 @@ loads.distributed = [];
 loads.point = [];
 
 loads.support_type = 'simple';
-loads.supports = [0, 100];
+loads.supports = [0, beam.L];
 
 %% Calculate section properties if not provided
 section = calculateSectionProperties(section);
