@@ -105,9 +105,9 @@ fpi_init = 0.75 * materials.fpu;    % Initial prestress (ksi) = 202.5 ksi
 % Place at the centroid of the left stem bottom region (update y_position)
 tendon1.Aps          = 2 * 0.153;   % Example: 2 x 0.5" dia strands = 0.306 in^2  -- UPDATE
 tendon1.fpi          = fpi_init;    % Initial prestress (ksi)
-tendon1.profile_type = 'parabolic'; % 'linear' | 'parabolic' | 'harped' | 'custom'
-tendon1.x_position   = -30;         % Approximate x-centroid of left stem (in)
-tendon1.y_position   = -26;         % y-coordinate from origin (in) -- UPDATE per design
+tendon1.profile_type = 'linear'; % 'linear' | 'parabolic' | 'harped' | 'custom'
+tendon1.x_position   = -29.875;     % x-centroid of left stem (in)
+tendon1.y_position   = -22;         % y-coordinate from origin (in)
 tendon1.e_start      = [];          % Will be computed from y_position & yc
 tendon1.e_mid        = [];          % Will be computed from y_position & yc
 tendon1.e_end        = [];          % Will be computed from y_position & yc
@@ -119,9 +119,9 @@ tendon1.bonding.bonded_zones = [0, 1.0];  % Fully bonded
 % --- TENDON 2: Right stem (mirror of Tendon 1) ---
 tendon2.Aps          = 2 * 0.153;   % Same as Tendon 1  -- UPDATE
 tendon2.fpi          = fpi_init;
-tendon2.profile_type = 'parabolic';
-tendon2.x_position   =  30;         % Approximate x-centroid of right stem (in)
-tendon2.y_position   = -26;         % Same depth as Tendon 1  -- UPDATE
+tendon2.profile_type = 'linear';
+tendon2.x_position   =  29.875;     % x-centroid of right stem (in)
+tendon2.y_position   = -22;         % Same depth as Tendon 1
 tendon2.e_start      = [];
 tendon2.e_mid        = [];
 tendon2.e_end        = [];
