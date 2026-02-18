@@ -11,10 +11,10 @@
 %   3. Results and plots will be generated automatically
 
 clear; clc; close all;
-My_data  = 'HW_2_new';
+My_data  = 'Projec1';
 %% Load input data
 fprintf('Loading input data...\n');
-[beam, section, materials, prestress, reinforcement, loads] = inputPrestressedBeam_HW1();
+[beam, section, materials, prestress, reinforcement, loads] = inputPrestressedBeam_Project1();
 
 %% Run analysis
 fprintf('\nRunning analysis...\n');
