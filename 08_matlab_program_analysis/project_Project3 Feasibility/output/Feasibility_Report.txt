@@ -1,0 +1,413 @@
+==================================================================
+   CEE 530 PRESTRESSED CONCRETE — PROJECT 1, PART 2
+   Feasibility Design Chart (Magnel Diagram)
+   Double-T Precast Prestressed Beam
+==================================================================
+   Student      : Chidchanok Pleesudjai (Fen)
+   Date         : 2026-03-17
+   Code edition : ACI 318-19  |  CEE 530 Class Limits
+   Sign conv.   : Compression = positive (+), Tension = negative (-)
+==================================================================
+
+
+==================================================================
+   PART 1 — GIVEN DATA
+==================================================================
+
+1.1  Geometry
+------------------------------------------------------------------
+  Span            L   = (20 + 24 + 20) ft x 12 = 768 in
+  Section height  h   = 28 in
+  Flange width    bf  = 120 in
+  Flange thick.   tf  = 2 in
+  Cover to c.g.s       = 2 in (minimum)
+
+1.2  Material Properties
+------------------------------------------------------------------
+  f'c    = 6.0 ksi          (28-day concrete strength)
+  f'ci   = 4.8 ksi          (concrete strength at transfer)
+  fpu    = 270 ksi           (strand ultimate strength)
+  fpy    = 243 ksi           (0.90 fpu)
+  fse    = 162 ksi           (effective prestress after losses)
+  Aps    = 0.153 in^2/strand (0.5-in diameter low-relaxation)
+  Pe     = 25 kip/strand     (effective force per strand)
+  Losses = 15%  =>  eta = 1 - 0.15 = 0.85
+
+1.3  Tendon Layout (4 strands, equal force)
+------------------------------------------------------------------
+  Strand   Type      y at support    y at x >= x_drape   x_drape
+  ------   ----      ------------    -----------------   -------
+  1, 3     Straight  6.0 in          6.0 in (constant)   none
+  2, 4     Harped    yc = 20.362 in  6.0 in              20 ft (240 in)
+
+  Harped tendon y-profile (linear to drape point):
+    y_h(x) = 20.362 + (6.0 - 20.362) * x / 240     for x <= 240 in
+    y_h(x) = 6.0                                     for x >  240 in
+
+  Tendon group centroid (4 equal tendons: 2 straight + 2 harped):
+    y_cg(x) = [ 2*y_straight + 2*y_h(x) ] / 4
+            = [ y_straight + y_h(x) ] / 2
+
+  Eccentricity of tendon group:
+    e_cg(x) = yc - y_cg(x)       (positive = tendon group below centroid)
+
+1.4  Loads
+------------------------------------------------------------------
+  Self-weight:
+    w_sw  = Ac * rho_c = 487.0 * (150/1728/1000) = 0.04227 kip/in
+
+  Superimposed dead load (2-in topping):
+    w_SDL = 2 * 120 * (150/1728/1000) = 0.02083 kip/in
+
+  Live load:
+    w_LL  = 420 lb/ft / 12 in/ft / 1000 = 0.03500 kip/in
+
+  Total service load:
+    w_s   = w_sw + w_SDL + w_LL
+          = 0.04227 + 0.02083 + 0.03500
+          = 0.09810 kip/in
+
+  Simply supported moment:
+    M(x) = w * x * (L - x) / 2
+
+
+==================================================================
+   PART 2 — CROSS-SECTION PROPERTIES  (Shoelace Formula)
+==================================================================
+
+2.1  Polygon Vertices (CCW, y measured from bottom of stems)
+------------------------------------------------------------------
+  Vertex  x (in)    y (in)
+  ------  --------  ------
+   1      -60        26
+   2      -33        26
+   3      -32         0
+   4      -28.25      0
+   5      -27.25     26
+   6       27.25     26
+   7       28.25      0
+   8       32         0
+   9       33        26
+  10       60        26
+  11       60        28
+  12      -60        28
+
+2.2  Computed Properties
+------------------------------------------------------------------
+  Ac  = 487.000  in^2
+  Ic  = 34638.8  in^4
+  yc  = 20.362   in   (centroid from bottom of stems)
+  yt  = 28.0 - 20.362 = 7.638  in   (centroid to top fiber)
+  yb  = 20.362  in               (centroid to bottom fiber)
+
+  Section moduli:
+    St = Ic / yt = 34638.8 / 7.638  = 4535.1  in^3
+    Sb = Ic / yb = 34638.8 / 20.362 = 1701.1  in^3
+
+  Kern points (no tension zone):
+    kt = Ic / (Ac * yt) = 9.312 in
+    kb = Ic / (Ac * yb) = 3.493 in
+
+
+==================================================================
+   PART 3 — ALLOWABLE STRESSES  (CEE 530)
+==================================================================
+
+  SIGN CONVENTION: Compression = positive (+), Tension = negative (-)
+
+3.1  At Transfer  (f'ci = 4.8 ksi, ACI 318-19 Sec. 24.5.3)
+------------------------------------------------------------------
+  Compression:
+    f_ci_allow = +0.60 * f'ci = +0.60 * 4.8 = +2.880 ksi
+
+  Tension:
+    f_ti_allow = -3 * sqrt(f'ci * 1000) / 1000
+               = -3 * sqrt(4800) / 1000
+               = -3 * 69.28 / 1000
+               = -0.2078 ksi
+
+3.2  At Service  (f'c = 6.0 ksi, Total Load — CEE 530 Class U)
+------------------------------------------------------------------
+  Compression:
+    f_cs_allow = +0.60 * f'c = +0.60 * 6.0 = +3.600 ksi
+
+  Tension:
+    f_ts_allow = -6 * sqrt(f'c * 1000) / 1000
+               = -6 * sqrt(6000) / 1000
+               = -6 * 77.46 / 1000
+               = -0.4648 ksi
+
+
+==================================================================
+   PART 4 — TENDON GROUP CENTROID ECCENTRICITY AT EACH SECTION
+==================================================================
+
+  Formula:
+    y_h(x)  = 20.362 + (6.0 - 20.362) * x / 240    [x <= 240 in]
+            = 6.0                                    [x >  240 in]
+    y_cg(x) = (y_straight + y_h(x)) / 2
+    e_cg(x) = yc - y_cg(x)
+
+  Section 1 — x = 0 ft (0 in)  [Left Support]
+    y_h    = 20.362 in
+    y_cg   = (6.0 + 20.362) / 2 = 13.181 in
+    e_cg   = 20.362 - 13.181 = 7.181 in
+
+  Section 2 — x = 10 ft (120 in)
+    y_h    = 20.362 + (6.0 - 20.362) * 120/240
+           = 20.362 - 7.181 = 13.181 in
+    y_cg   = (6.0 + 13.181) / 2 = 9.590 in
+    e_cg   = 20.362 - 9.590 = 10.772 in
+
+  Section 3 — x = 20 ft (240 in)  [Drape Point]
+    y_h    = 6.0 in (tendon reaches lowest point)
+    y_cg   = (6.0 + 6.0) / 2 = 6.0 in
+    e_cg   = 20.362 - 6.0 = 14.362 in
+
+  Section 4 — x = 32 ft (384 in)  [Midspan]
+    y_h    = 6.0 in (constant past drape point)
+    y_cg   = (6.0 + 6.0) / 2 = 6.0 in
+    e_cg   = 20.362 - 6.0 = 14.362 in
+
+  Summary:
+    Sec   x(ft)   y_h(in)   y_cg(in)   e_cg(in)
+    ---   -----   -------   --------   --------
+     1       0    20.362     13.181      7.181
+     2      10    13.181      9.590     10.772
+     3      20     6.000      6.000     14.362
+     4      32     6.000      6.000     14.362
+
+
+==================================================================
+   PART 5 — MAGNEL DIAGRAM EQUATIONS
+==================================================================
+
+5.1  Derivation of the Four Lines  (Naaman notation)
+------------------------------------------------------------------
+  The Magnel diagram plots 1/F vs eccentricity e.
+  F   = resultant prestress force (all strands combined).
+  lam = 1/F
+
+  STRESS EQUATIONS (simply supported, compression positive):
+    At Transfer (eta = 1.0, moment = Mi):
+      f_top = +F/Ac - F*e/St + Mi/St
+      f_bot = +F/Ac + F*e/Sb - Mi/Sb
+
+    At Service (effective force = eta*F, moment = MT):
+      f_top = +eta*F/Ac - eta*F*e/St + MT/St
+      f_bot = +eta*F/Ac + eta*F*e/Sb - MT/Sb
+
+  LINE I  — Top fiber @ Transfer, tension limit (lower bound on 1/F):
+    Requirement:  f_top >= -f_ti_allow  (keep tension above limit)
+    Rearranged:   1/F >= (e/St - 1/Ac) / dI
+    where dI  = f_ti_allow + Mi/St
+
+  LINE II — Bot fiber @ Transfer, compression limit (lower bound):
+    Requirement:  f_bot <= +f_ci_allow
+    Rearranged:   1/F >= (1/Ac + e/Sb) / dII
+    where dII = f_ci_allow + Mi/Sb
+
+  LINE III — Bot fiber @ Service, tension limit (UPPER bound on 1/F):
+    Requirement:  f_bot >= -f_ts_allow
+    Rearranged:   1/F <= eta * (1/Ac + e/Sb) / dIII
+    where dIII = MT/Sb - f_ts_allow     [requires dIII > 0]
+    => Governs F_min because a higher F (smaller 1/F) is needed
+       to counteract large service tension at the bottom fiber.
+
+  LINE IV — Top fiber @ Service, compression limit (lower bound):
+    Requirement:  f_top <= +f_cs_allow
+    Rearranged:   1/F >= eta * (1/Ac - e/St) / dIV
+    where dIV = f_cs_allow - MT/St
+
+  FEASIBILITY CONDITION:
+    max(lineI, lineII, lineIV) <= 1/F <= lineIII
+    and  1/F > 0
+    and  e_geo_min <= e <= e_geo_max
+
+5.2  Denominator Values at Each Section
+------------------------------------------------------------------
+  Sec   x(ft)   Mi(k-in)  MT(k-in)   dI      dII     dIII    dIV
+  ---   -----   --------  --------   ------  ------  ------  ------
+   1       0         0.0       0.0   0.2078  2.8800 -0.4648  3.6000
+   2      10      1643.6    3814.4   0.5703  3.8462  1.7775  2.7589
+   3      20      2678.5    6216.1   0.7985  4.4545  3.1893  2.2293
+   4      32      3116.8    7233.3   0.8951  4.7122  3.7873  2.0050
+
+  Note: Section 1 dIII < 0 because MT=0. Line III gives no upper
+  bound at x=0 (feasibility zone is open-ended upward).
+
+
+==================================================================
+   PART 6 — F_min FROM LINE III AT EACH SECTION
+==================================================================
+
+  Line III upper bound at e = e_cg:
+    1/F_max = eta * (1/Ac + e_cg/Sb) / dIII
+    F_min   = 1 / (1/F_max) = dIII / [ eta * (1/Ac + e_cg/Sb) ]
+
+  Section 1 — x = 0 ft, e_cg = 7.181 in
+    dIII = -0.4648 < 0  =>  No upper bound  =>  F_min = 0 kip
+
+  Section 2 — x = 10 ft, e_cg = 10.772 in
+    (1/Ac + e_cg/Sb) = 1/487.0 + 10.772/1701.1
+                     = 0.002053 + 0.006332
+                     = 0.008385
+
+    Line III: 1/F = 0.85 * 0.008385 / 1.7775
+                  = 0.007127 / 1.7775
+                  = 0.004010
+    F_min = 1/0.004010 = 249 kip
+
+    Line II: 1/F = 0.008385 / 3.8462 = 0.002180  =>  F_max = 459 kip
+    Feasible: 249 <= F <= 459 kip
+
+  Section 3 — x = 20 ft, e_cg = 14.362 in
+    (1/Ac + e_cg/Sb) = 1/487.0 + 14.362/1701.1
+                     = 0.002053 + 0.008443
+                     = 0.010496
+
+    Line III: 1/F = 0.85 * 0.010496 / 3.1893
+                  = 0.008921 / 3.1893
+                  = 0.002798
+    F_min = 1/0.002798 = 357 kip
+
+    Line II: 1/F = 0.010496 / 4.4545 = 0.002359  =>  F_max = 424.4 kip
+    Feasible: 357 <= F <= 424.4 kip
+
+  Section 4 — x = 32 ft (Midspan), e_cg = 14.362 in  [GOVERNING]
+    (1/Ac + e_cg/Sb) = 0.010496  (same as Section 3)
+
+    Line III: 1/F = 0.85 * 0.010496 / 3.7873
+                  = 0.008921 / 3.7873
+                  = 0.002356
+    F_min = 1/0.002356 = 424.5 kip
+
+    Line II: 1/F = 0.010496 / 4.7122 = 0.002228  =>  F_max = 449.0 kip
+    Feasible: 424.5 <= F <= 449.0 kip
+
+
+==================================================================
+   PART 7 — GOVERNING REQUIRED PRESTRESS FORCE
+==================================================================
+
+7.1  Exact F Range at Each Section
+------------------------------------------------------------------
+  Sec   x(ft)   e_cg(in)   F_min(kip)   F_max(kip)
+  ---   -----   --------   ----------   ----------
+   1       0      7.181          0.0        459.0
+   2      10     10.772        249.0        459.0
+   3      20     14.362        357.5        424.4   <-- upper bound (Line II)
+   4      32     14.362        424.5        449.0   <-- lower bound (Line III)
+
+7.2  The Feasibility Conflict at e_cg = 14.362 in
+------------------------------------------------------------------
+  Sections 3 and 4 share the same e_cg (both tendons at y=6 in),
+  but their F bounds nearly cross:
+
+    Section 3 requires:  F <= 424.4 kip   (Line II, bot compr @ transfer)
+    Section 4 requires:  F >= 424.5 kip   (Line III, bot tens @ service)
+
+  The gap is only 0.1 kip, but it means no single F satisfies
+  BOTH sections exactly at this eccentricity profile.
+
+  The feasible F range for the full beam (intersection across all
+  sections) is technically empty:
+    F must be >= 424.5 kip  (Section 4 governs minimum)
+    F must be <= 424.4 kip  (Section 3 governs maximum)
+    => No F satisfies all constraints simultaneously.
+
+7.3  Engineering Resolution
+------------------------------------------------------------------
+  With discrete strand increments of 25 kip:
+    16 strands: F = 400 kip  -- midspan service tension FAILS
+    17 strands: F = 425 kip  -- drape point transfer compression
+                                 marginally exceeds limit by 0.006 ksi
+
+  Verify F = 425 kip at Section 3 (x=20 ft, e=14.362 in):
+    Mi at x=20 ft = 0.04227*240*(768-240)/2 = 2678.5 kip-in
+
+    f_bot @ transfer = +425/487.0 + 425*14.362/1701.1 - 2678.5/1701.1
+                     = +0.8726 + 3.5870 - 1.5745
+                     = +2.886 ksi
+    Limit: +2.880 ksi  --> EXCEED by 0.006 ksi (0.2%)
+
+  The exceedance of 0.006 ksi (0.2%) is within typical engineering
+  tolerance and rounding of material properties. For a class
+  project this is acceptable. In practice, one would:
+    Option A: Accept 0.2% marginal exceedance (engineering judgment)
+    Option B: Debond 1 strand at x=20 ft to slightly reduce e_cg
+              at the drape point while keeping midspan e unchanged
+
+  --> Design decision: Use 17 strands (F = 425 kip), noting the
+      marginal 0.2% exceedance at the drape point (x=20 ft).
+
+7.4  Number of Strands
+------------------------------------------------------------------
+  n = ceil(F_min_governing / Pe) = ceil(424.5 / 25) = 17 strands
+
+  F_provided = 17 * 25 = 425 kip
+
+
+==================================================================
+   PART 8 — STRESS VERIFICATION  (F = 425 kip)
+==================================================================
+
+8.1  At x = 20 ft (Drape Point) — Transfer Controls Here
+------------------------------------------------------------------
+  Mi = 2678.5 kip-in,  e_cg = 14.362 in,  eta = 1.0
+
+  f_bot = +F/Ac + F*e/Sb - Mi/Sb
+        = +425/487.0 + 425*14.362/1701.1 - 2678.5/1701.1
+        = +0.8726 + 3.5870 - 1.5745
+        = +2.886 ksi
+  Limit:  +2.880 ksi    -->  MARGINAL (+0.006 ksi over, 0.2%)
+
+  f_top = +F/Ac - F*e/St + Mi/St
+        = +0.8726 - 425*14.362/4535.1 + 2678.5/4535.1
+        = +0.8726 - 1.3460 + 0.5908
+        = +0.1174 ksi (compression)
+  Limit:  -0.2078 ksi  -->  PASS
+
+8.2  At x = 32 ft (Midspan) — Service Controls Here
+------------------------------------------------------------------
+  Mi = 3116.8 kip-in,  MT = 7233.3 kip-in,  e_cg = 14.362 in
+
+  Transfer (eta=1.0, F=425 kip):
+    f_bot = +0.8726 + 3.5870 - 1.8323 = +2.629 ksi
+    Limit:  +2.880 ksi    -->  PASS  (D/C = 0.913)
+
+    f_top = +0.8726 - 1.3460 + 0.6874 = +0.214 ksi (compression)
+    Limit:  -0.2078 ksi   -->  PASS
+
+  Service (eta=0.85, Fe=361.25 kip, MT=7233.3 kip-in):
+    f_bot = +Fe/Ac + Fe*e/Sb - MT/Sb
+          = +0.7417 + 3.0526 - 4.2522
+          = -0.4579 ksi
+    Limit:  -0.4648 ksi   -->  PASS  (D/C = 0.985)
+
+    f_top = +Fe/Ac - Fe*e/St + MT/St
+          = +0.7417 - 1.1444 + 1.5950
+          = +1.1923 ksi
+    Limit:  +3.600 ksi    -->  PASS  (D/C = 0.331)
+
+
+==================================================================
+   FINAL SUMMARY TABLE
+==================================================================
+  Check                             x      Demand       Limit      Status
+  --------------------------------  -----  ----------   ---------  ------
+  Transfer: bot compression         20 ft  +2.886 ksi  +2.880 ksi  MARGINAL
+  Transfer: top fiber               20 ft  +0.117 ksi  -0.208 ksi  PASS
+  Transfer: bot compression         32 ft  +2.629 ksi  +2.880 ksi  PASS
+  Service:  bot tension             32 ft  -0.458 ksi  -0.465 ksi  PASS
+  Service:  top compression         32 ft  +1.192 ksi  +3.600 ksi  PASS
+
+  --> F_provided = 425 kip  (17 strands x 25 kip/strand)
+  --> Governing F_min = 424.5 kip (Line III, bot tension @ service, x=32 ft)
+  --> Governing F_max = 424.4 kip (Line II, bot compr @ transfer, x=20 ft)
+  --> The feasible zone is a near-point; 17 strands is the only
+      practical choice. The 0.2% exceedance at x=20 ft is noted.
+==================================================================
+   Generated by feasibility4Sections.m
+   CEE 530 Prestressed Concrete, ASU Spring 2026
+==================================================================

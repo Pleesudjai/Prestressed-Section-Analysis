@@ -1,0 +1,369 @@
+==================================================================
+   CEE 530 PRESTRESSED CONCRETE  —  PROJECT 1  (PART 3)
+   Double-T Beam: Ultimate Strength — Nominal Moment Capacity
+==================================================================
+   Student      : Chidchanok Pleesudjai (Fen)
+   Date         : 2026-03-17
+   Active code  : CEE530  [toggle design_code in ultimateDesign.m]
+==================================================================
+
+==================================================================
+   PART 1 — GIVEN DATA
+==================================================================
+
+1.1  BEAM GEOMETRY
+------------------------------------------------------------------
+  Span:  L = (20 + 24 + 20) ft x 12 in/ft = 768 in  (64.0 ft)
+
+1.2  CROSS-SECTION  (Double-T / TT, symmetric)
+------------------------------------------------------------------
+  Section origin : y = 0 at BOTTOM of stems, positive upward
+  Top flange     : 120 in wide x 2 in thick   (y = 26 to 28 in)
+  Two stems      : bw = 9.50 in total (2 stems x 4.75 in avg)
+  Total depth    : h = 28.0 in
+
+1.3  MATERIAL PROPERTIES
+------------------------------------------------------------------
+  Concrete    : f'c  = 6.0 ksi   (28-day strength)
+               f'ci = 4.8 ksi   (strength at transfer)
+  PS steel    : fpu  = 270 ksi   (ultimate tensile strength)
+               fpy  = 229.5 ksi   (fpy/fpu = 0.85)
+               Eps  = 28500 ksi
+  Mild steel  : fy   = 60 ksi,  Es = 29000 ksi
+               As   = 0.0000 in^2  (tension,     depth d  = 0.0000 in from top)
+               As' = 0.0000 in^2  (compression, depth d' = 0.0000 in from top)
+
+1.4  PRESTRESS AND LOADS
+------------------------------------------------------------------
+  Prestress losses : 15%  -->  eta = 1 - 0.15 = 0.85
+  Design strands   : 13 strands x 0.153 in^2/strand
+    Aps = 13 x 0.153 = 1.9890 in^2  (total)
+    NOTE: inputData.m defines 4 strands; 0.612 in^2 overridden to 13 strands for design.
+  Tendon y at midspan : y_p = 6.0000 in  (from bottom, all strands at y=6 in at midspan)
+
+  Self-weight (auto from section area):
+    w_sw = Ac x rho_c
+         = 487.0000 in^2 x (150/1728 lb/in^3) / 1000  [lb to kip]
+         = 0.042274 kip/in  =  0.5073 kip/ft
+
+  Superimposed dead load  (2-in concrete topping, 150 pcf):
+    w_SDL = 2 in x 120 in x (150/1728 lb/in^3) / 1000
+          = 0.020833 kip/in  =  0.2500 kip/ft
+
+  Live load:
+    w_LL  = 0.42 kip/ft / 12 in/ft
+          = 0.035000 kip/in  =  0.4200 kip/ft
+
+==================================================================
+   PART 2 — SECTION PROPERTIES  (Shoelace / Green's Theorem)
+==================================================================
+
+2.1  CROSS-SECTIONAL AREA
+------------------------------------------------------------------
+  Formula (Shoelace):
+    A = (1/2) * |Sum_{i=1}^{n} (x_i * y_{i+1} - x_{i+1} * y_i)|
+
+  A = Ac = 487.0000 in^2
+
+2.2  CENTROID  (from bottom, y = 0 at stem soffit)
+------------------------------------------------------------------
+  Formula:
+    yc = [Sum (x_i*y_{i+1} - x_{i+1}*y_i)*(y_i + y_{i+1})] / (6*A)
+
+  yc = 20.3621 in   from bottom
+  yt = h - yc  =  28.0000 - 20.3621  =  7.6379 in   (centroid to TOP fiber)
+  yb = yc      =  20.3621 in             (centroid to BOTTOM fiber)
+
+2.3  MOMENT OF INERTIA  (centroidal x-axis)
+------------------------------------------------------------------
+  Formula:
+    Ic = (1/12)*|Sum (x_i*y_{i+1}-x_{i+1}*y_i)*(y_i^2+y_i*y_{i+1}+y_{i+1}^2)|
+
+  Ic = 34638.82 in^4
+
+2.4  SECTION MODULI
+------------------------------------------------------------------
+  St = Ic / yt  =  34638.82 / 7.6379  =  4535.1121 in^3   (top)
+  Sb = Ic / yb  =  34638.82 / 20.3621  =  1701.1434 in^3   (bottom)
+
+==================================================================
+   PART 3 — ACI CODE PARAMETERS  [CEE530]
+==================================================================
+
+3.1  STRESS BLOCK FACTOR  beta_1  (ACI 318-19 Table 22.2.2.4.3)
+------------------------------------------------------------------
+  Formula:
+    beta_1 = 0.85 - 0.05 * (f'c - 4)     for f'c > 4 ksi
+    Clamped to [0.65, 0.85]
+
+  beta_1 = 0.85 - 0.05 * (6.0 - 4)
+         = 0.85 - 0.05 * 2.0
+         = 0.75
+
+3.2  PRESTRESS FACTOR  gamma_p  (ACI 318-19 Table 22.3.2.1)
+------------------------------------------------------------------
+  fpy / fpu = 229.5 / 270 = 0.850
+  fpy/fpu >= 0.85  -->  gamma_p = 0.40  (stress-relieved strand) [CEE530]
+
+3.3  EFFECTIVE PRESTRESS CHECK  (ACI validity condition: fse >= 0.5*fpu)
+------------------------------------------------------------------
+  fpi (initial) = Pi / Aps = 25.0 / 0.153 = 163.40 ksi
+  fse (effective after losses):
+    fse = fpi * eta  =  163.40 * 0.85  =  138.89 ksi
+    0.5 * fpu = 0.5 * 270 = 135.0 ksi
+    fse = 138.89 ksi  >=  0.5*fpu = 135.0 ksi   -->  VALID  ✓
+
+==================================================================
+   PART 4 — TENDON EFFECTIVE DEPTH  dp
+==================================================================
+
+  dp = distance from extreme compression fiber (top) to
+       centroid of prestressing steel (tension side)
+
+  Formula:
+    dp = h - y_p
+       where  y_p = force-weighted centroid of tendons from bottom
+
+  At midspan (all 4 original tendons at y = 6 in):
+    y_p = 6.0000 in  (from bottom)
+
+  dp = h - y_p
+     = 28.0000 - 6.0000
+     = 22.0000 in
+
+  Equivalently:
+    e_mid = yc - y_p  =  20.3621 - 6.0000  =  14.3621 in  (eccentricity at midspan)
+    dp    = yt + e    =  7.6379 + 14.3621  =  22.0000 in   ✓ (same result)
+
+==================================================================
+   PART 5 — FACTORED MOMENT DEMAND  Mu
+==================================================================
+
+  ACI 318-19 load combination (gravity only, Eq. 5.3.1b):
+    U = 1.2D + 1.6L
+
+  Factored uniform load:
+    wu = 1.2 * (w_sw + w_SDL)  +  1.6 * w_LL
+       = 1.2 * (0.042274 + 0.020833)  +  1.6 * 0.035000
+       = 1.2 * 0.063108  +  0.056000
+       = 0.075729  +  0.056000
+       = 0.131729 kip/in  =  1.5808 kip/ft
+
+  Maximum factored moment (at midspan, simply supported):
+    Mu = wu * L^2 / 8
+       = 0.131729 * 768^2 / 8
+       = 0.131729 * 589824 / 8
+       = 9712.13 kip-in  =  809.34 kip-ft
+
+==================================================================
+   PART 6 — STRESS IN PRESTRESSING STEEL  fps
+==================================================================
+
+  ACI 318-19 Eq. 22.3.2.1 (bonded tendons, general form):
+
+    fps = fpu * [ 1 - (gamma_p / beta_1)
+                    * ( rho_p * fpu/f'c
+                      + (d / dp)  * omega
+                      - (d'/ dp)  * omega' ) ]
+
+  Where:
+    rho_p   = Aps / (b_eff * dp)         (prestress steel ratio)
+    omega   = rho_s  * fy / f'c           (tension mild steel index)
+    omega' = rho_s' * fy / f'c           (compression mild steel index)
+    d       = depth to tension mild steel centroid from top (in)
+    d'      = depth to compression mild steel centroid from top (in)
+
+  Parameters:
+    fpu     = 270 ksi
+    gamma_p = 0.40
+    beta_1  = 0.75
+    f'c     = 6.0 ksi
+    fy      = 60 ksi
+    As      = 0.0000 in^2   (tension mild steel)
+    As'     = 0.0000 in^2   (compression mild steel)
+
+  --- MILD STEEL SUBSTITUTION ---
+
+    As = 0   -->   omega  = rho_s  * fy/f'c = 0
+    As'= 0   -->   omega' = rho_s' * fy/f'c = 0
+
+    Substituting omega = 0,  omega' = 0:
+
+    fps = fpu * [ 1 - (gamma_p / beta_1) * ( rho_p * fpu/f'c + 0 - 0 ) ]
+
+    Simplified to (prestress-only form):
+
+    fps = fpu * [ 1 - (gamma_p / beta_1) * (rho_p * fpu / f'c) ]
+
+  --- STEP A: Trial compression block (assume rectangular) ---
+
+    Use full flange width:  b = 120 in
+
+    rho_p (trial) = Aps / (b * dp)
+                  = 1.9890 / (120 * 22.0000)
+                  = 0.000753
+
+    fps (trial) = 270 * [ 1 - (0.40 / 0.75) * (0.000753 * 270 / 6.0) ]
+               = 270 * [ 1 - 0.5333 * 0.0339 ]
+               = 270 * [ 1 - 0.018082 ]
+               = 265.12 ksi
+
+    a_trial = Aps * fps_trial / (0.85 * f'c * b)
+            = 1.9890 * 265.12 / (0.85 * 6.0 * 120)
+            = 527.3195 / 612.0000
+            = 0.8616 in
+
+    a_trial = 0.8616 in  <=  hf = 2.0 in   -->  RECTANGULAR section  ✓
+    Compression block lies entirely within the flange.
+    Use b = 120 in (full flange width) for all calculations.
+
+  --- STEP B: Final fps and compression depth  (rectangular) ---
+
+    rho_p = 0.000753  (same as trial, b = 120 in)
+
+    fps   = 270 * [ 1 - (0.40 / 0.75) * (0.000753 * 270 / 6.0) ]
+          = 265.12 ksi
+
+    a     = Aps * fps / (0.85 * f'c * b)
+          = 1.9890 * 265.12 / (0.85 * 6.0 * 120)
+          = 0.8616 in
+
+    Verify:  a = 0.8616 in  <=  hf = 2.0 in   ✓
+
+==================================================================
+   PART 7 — NOMINAL MOMENT CAPACITY  Mn
+==================================================================
+
+  RECTANGULAR SECTION  (a = 0.8616 in  <=  hf = 2.0 in)
+
+  Formula:
+    Mn = Aps * fps * (dp - a/2)
+
+  Substitution:
+    Mn = 1.9890 * 265.12 * (22.0000 - 0.8616/2)
+       = 1.9890 * 265.12 * (22.0000 - 0.4308)
+       = 527.3195 * 21.5692
+       = 11373.85 kip-in
+       = 947.82 kip-ft
+
+==================================================================
+   PART 8 — DUCTILITY CHECK  (Net Tensile Strain  et)
+==================================================================
+
+  ACI 318-19 §9.3.3:
+    Minimum  et >= 0.004  for flexural members
+    et >= 0.005  -->  tension-controlled  -->  phi = 0.90
+    0.004 <= et < 0.005  -->  transition zone  -->  phi interpolated
+
+  Depth to neutral axis:
+    Formula:  c = a / beta_1
+    c = 0.8616 / 0.75
+      = 1.1488 in
+
+  Net tensile strain at extreme prestressing steel level:
+    Formula:  et = (dp - c) / c * ecu      (ecu = 0.003)
+    et = (22.0000 - 1.1488) / 1.1488 * 0.003
+       = 20.8512 / 1.1488 * 0.003
+       = 0.05445
+
+  et = 0.05445  >=  0.005   -->  TENSION-CONTROLLED
+  phi = 0.90   ✓
+
+  Reduced nominal moment capacity:
+    phi*Mn = 0.90 * 11373.85
+           = 10236.47 kip-in  =  853.04 kip-ft
+
+==================================================================
+   PART 9 — CRACKING MOMENT  Mcr  (ACI 318-19 §9.6.1.2)
+==================================================================
+
+  Purpose: Ensure phi*Mn >= 1.2*Mcr (prevent brittle fracture at first crack)
+
+  Formula:
+    Mcr = (fr + fce) * Sb
+
+  Modulus of rupture:
+    fr = 7.5 * lambda * sqrt(f'c_psi) / 1000      (lambda = 1.0 normal weight)
+       = 7.5 * 1.0 * sqrt(6000) / 1000
+       = 7.5 * 77.4597 / 1000
+       = 0.5809 ksi  (tension, positive in this formula)
+
+  Effective prestress at BOTTOM fiber after losses:
+    fce = Fe/Ac  +  Fe*e/Sb
+    where:
+      Fe  = Aps * fse  =  1.9890 * 138.89  =  276.25 kips
+      e   = e_mid      =  14.3621 in  (eccentricity at midspan)
+      Ac  = 487.0000 in^2
+      Sb  = 1701.1434 in^3
+
+    fce = 276.25 / 487.0000  +  276.25 * 14.3621 / 1701.1434
+        = 0.5672  +  2.3323
+        = 2.8995 ksi  (compression at bottom fiber, positive)
+
+  Cracking moment:
+    Mcr = (fr + fce) * Sb
+        = (0.5809 + 2.8995) * 1701.1434
+        = 3.4805 * 1701.1434
+        = 5920.77 kip-in  =  493.40 kip-ft
+
+  Minimum strength requirement:
+    1.2 * Mcr = 1.2 * 5920.77  =  7104.92 kip-in  =  592.08 kip-ft
+
+==================================================================
+   PART 10 — DESIGN CHECKS SUMMARY
+==================================================================
+
+10.1  FLEXURAL STRENGTH CHECK:  phi*Mn  >=  Mu
+------------------------------------------------------------------
+  phi*Mn  = 10236.47 kip-in  (853.04 kip-ft)
+  Mu_max  = 9712.13 kip-in  (809.34 kip-ft)
+  D/C     = Mu / phi*Mn  =  9712.13 / 10236.47  =  0.949
+  RESULT:  phi*Mn = 10236.47  >=  Mu = 9712.13 kip-in   -->  PASS  ✓
+
+10.2  MINIMUM REINFORCEMENT CHECK:  phi*Mn  >=  1.2*Mcr
+------------------------------------------------------------------
+  phi*Mn  = 10236.47 kip-in
+  1.2*Mcr = 7104.92 kip-in
+  Ratio   = phi*Mn / (1.2*Mcr)  =  10236.47 / 7104.92  =  1.441
+  RESULT:  phi*Mn = 10236.47  >=  1.2*Mcr = 7104.92 kip-in   -->  PASS  ✓
+
+10.3  DUCTILITY REQUIREMENT:  et  >=  0.004
+------------------------------------------------------------------
+  et = 0.05445
+  RESULT:  et = 0.05445  >=  0.004   -->  PASS  ✓
+
+------------------------------------------------------------------
+  FINAL SUMMARY TABLE
+------------------------------------------------------------------
+  Check                                Demand                Capacity              Status
+  -----------------------------------  --------------------  --------------------  ------
+  Flexural strength: phi*Mn >= Mu      Mu = 9712.1 kip-in    phi*Mn = 10236.5 kip-in  PASS
+  Min. reinforcement: phi*Mn >= 1.2Mcr  1.2Mcr = 7104.9 kip-in  phi*Mn = 10236.5 kip-in  PASS
+  Ductility: et >= 0.004               et = 0.05445          >= 0.004              PASS
+
+------------------------------------------------------------------
+  KEY RESULTS
+------------------------------------------------------------------
+  Design code   : CEE530 (stress-relieved, fpy/fpu=0.85, γp=0.40)
+  Section type  : Rectangular (a <= hf)
+  Aps           = 1.9890 in^2  (13 strands x 0.153 in^2)
+  dp            = 22.0000 in
+  rho_p         = 0.000753
+  fps           = 265.12 ksi
+  a             = 0.8616 in
+  c             = 1.1488 in
+  et            = 0.05445
+  phi           = 0.90
+  Mn            = 11373.85 kip-in  (947.82 kip-ft)
+  phi*Mn        = 10236.47 kip-in  (853.04 kip-ft)
+  Mu_max        = 9712.13 kip-in  (809.34 kip-ft)
+  D/C           = 0.949
+  fr            = 0.5809 ksi
+  fce           = 2.8995 ksi
+  Mcr           = 5920.77 kip-in  (493.40 kip-ft)
+  1.2*Mcr       = 7104.92 kip-in
+
+==================================================================
+   Generated by ultimateDesign.m
+   Active: CEE530 (stress-relieved, fpy/fpu=0.85, γp=0.40)
+==================================================================

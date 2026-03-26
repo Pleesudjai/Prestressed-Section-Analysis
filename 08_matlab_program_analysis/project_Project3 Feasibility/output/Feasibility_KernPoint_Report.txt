@@ -1,0 +1,240 @@
+============================================================
+ KERN-POINT ECCENTRICITY BOUNDS
+ Naaman, "Prestressed Concrete" -- Table 4.2, Row 2
+ (Conditions solved for e_o at given F and M)
+============================================================
+
+ SIGN CONVENTION:  compression = positive (+)  tension = negative (-)
+
+ NAAMAN NOTATION:
+   sigma_ti  = signed allowable stress @ transfer, tension    [NEGATIVE ksi]
+   sigma_ci  = signed allowable stress @ transfer, compression[POSITIVE ksi]
+   sigma_cs  = signed allowable stress @ service,  compression[POSITIVE ksi]
+   sigma_ts  = signed allowable stress @ service,  tension    [NEGATIVE ksi]
+   k_b = +St/Ac = +r^2/y_t  (lower kern, POSITIVE, below centroid)
+   k_t = -Sb/Ac = -r^2/y_b  (upper kern, NEGATIVE, above centroid)
+   Z_t = St,  Z_b = Sb   (both positive)
+   M_min = M_i = transfer moment (self-weight only)
+   M_max = M_T = service moment  (SW + SDL + LL)
+
+ GOVERNING EQUATIONS  (Naaman Table 4.2, Row 2):
+   Line I  : e_o <= k_b + (1/F_i)(M_min - sigma_ti * Z_t)         [UPPER bound]
+   Line II : e_o <= k_t + (1/F_i)(M_min + sigma_ci * Z_b)         [UPPER bound]
+   Line III: e_o >= k_b + [1/(eta*F_i)](M_max - sigma_cs * Z_t)   [LOWER bound]
+   Line IV : e_o >= k_t + [1/(eta*F_i)](M_max + sigma_ts * Z_b)   [LOWER bound]
+
+   e_max = min(Line I,   Line II)   (maximum allowable eccentricity)
+   e_min = max(Line III, Line IV)   (minimum required eccentricity)
+
+------------------------------------------------------------
+ SECTION PROPERTIES
+   Ac = 487.000 in^2  |  Ic = 34638.8 in^4  |  yc = 20.3621 in
+   St = 4535.11 in^3  (top section modulus,    Z_t)
+   Sb = 1701.14 in^3  (bottom section modulus, Z_b)
+
+   k_b = +St/Ac = +4535.11 / 487.000 = +9.3123 in  (lower kern, POSITIVE)
+   k_t = -Sb/Ac = -1701.14 / 487.000 = -3.4931 in  (upper kern, NEGATIVE)
+
+ ALLOWABLE STRESSES  (Naaman signed convention)
+   sigma_ti = -0.2078 ksi  (transfer tension,    NEGATIVE)
+   sigma_ci = +2.8800 ksi  (transfer compression,POSITIVE)
+   sigma_cs = +3.6000 ksi  (service  compression,POSITIVE)
+   sigma_ts = -0.4648 ksi  (service  tension,    NEGATIVE)
+
+ PRESTRESS FORCE
+   F_i      = 425.00 kip  (total initial prestress)
+   eta      = 0.85
+   eta*F_i  = 361.25 kip  (effective force after losses)
+
+============================================================
+ SECTION AT  x = 0 ft  (x/L = 0.000)
+============================================================
+   M_min = M_i = 0.00 kip-in  (transfer, SW only)
+   M_max = M_T = 0.00 kip-in  (service,  SW+SDL+LL)
+   e_cg  = 7.1821 in  (tendon group centroid at this x)
+
+ Naaman Line I  [UPPER bound on e_o]
+   Condition : transfer, top fiber tension >= sigma_ti
+   Formula   : e_o <= k_b + (1/F_i)(M_min - sigma_ti * Z_t)
+            = (+9.3123) + (0.00 - (-0.2078) x 4535.11) / 425.00
+            = (+9.3123) + (0.00 - (-942.61)) / 425.00
+            = (+9.3123) + 2.2179
+   --> e_I  = 11.5302 in        [e_o must be <= this]
+
+ Naaman Line II [UPPER bound on e_o]
+   Condition : transfer, bot fiber compression <= sigma_ci
+   Formula   : e_o <= k_t + (1/F_i)(M_min + sigma_ci * Z_b)
+            = (-3.4931) + (0.00 + (+2.8800) x 1701.14) / 425.00
+            = (-3.4931) + (0.00 + (4899.29)) / 425.00
+            = (-3.4931) + 11.5277
+   --> e_II = 8.0346 in        [e_o must be <= this]
+
+ Naaman Line III [LOWER bound on e_o]
+   Condition : service, top fiber compression <= sigma_cs
+   Formula   : e_o >= k_b + [1/(eta*F_i)](M_max - sigma_cs * Z_t)
+            = (+9.3123) + (0.00 - (+3.6000) x 4535.11) / 361.25
+            = (+9.3123) + (0.00 - (16326.40)) / 361.25
+            = (+9.3123) + -45.1942
+   --> e_III= -35.8819 in        [e_o must be >= this]
+
+ Naaman Line IV [LOWER bound on e_o]
+   Condition : service, bot fiber tension >= sigma_ts
+   Formula   : e_o >= k_t + [1/(eta*F_i)](M_max + sigma_ts * Z_b)
+            = (-3.4931) + (0.00 + (-0.4648) x 1701.14) / 361.25
+            = (-3.4931) + (0.00 + (-790.62)) / 361.25
+            = (-3.4931) + -2.1886
+   --> e_IV = -5.6817 in        [e_o must be >= this]
+
+ GOVERNING ECCENTRICITY BOUNDS:
+   UPPER bounds:  e_I  = +11.5302 in  |  e_II  = +8.0346 in
+   e_max = min(e_I, e_II)   = min(+11.5302, +8.0346) = +8.0346 in   [Line II governs]
+   LOWER bounds:  e_III= -35.8819 in  |  e_IV  = -5.6817 in
+   e_min = max(e_III,e_IV) = max(-35.8819, -5.6817) = -5.6817 in   [Line IV governs]
+   Physical limit: e_cover = 18.3621 in  (cover = 2.0 in)
+   --> FEASIBLE:  -5.6817 in  <=  e_o  <=  +8.0346 in  (range = 13.7163 in)
+   Tendon CG: e_cg = 7.1821 in  --> INSIDE  feasible range  [OK]
+
+============================================================
+ SECTION AT  x = 10 ft  (x/L = 0.156)
+============================================================
+   M_min = M_i = 1643.62 kip-in  (transfer, SW only)
+   M_max = M_T = 3814.42 kip-in  (service,  SW+SDL+LL)
+   e_cg  = 10.7721 in  (tendon group centroid at this x)
+
+ Naaman Line I  [UPPER bound on e_o]
+   Condition : transfer, top fiber tension >= sigma_ti
+   Formula   : e_o <= k_b + (1/F_i)(M_min - sigma_ti * Z_t)
+            = (+9.3123) + (1643.62 - (-0.2078) x 4535.11) / 425.00
+            = (+9.3123) + (1643.62 - (-942.61)) / 425.00
+            = (+9.3123) + 6.0852
+   --> e_I  = 15.3976 in        [e_o must be <= this]
+
+ Naaman Line II [UPPER bound on e_o]
+   Condition : transfer, bot fiber compression <= sigma_ci
+   Formula   : e_o <= k_t + (1/F_i)(M_min + sigma_ci * Z_b)
+            = (-3.4931) + (1643.62 + (+2.8800) x 1701.14) / 425.00
+            = (-3.4931) + (1643.62 + (4899.29)) / 425.00
+            = (-3.4931) + 15.3951
+   --> e_II = 11.9020 in        [e_o must be <= this]
+
+ Naaman Line III [LOWER bound on e_o]
+   Condition : service, top fiber compression <= sigma_cs
+   Formula   : e_o >= k_b + [1/(eta*F_i)](M_max - sigma_cs * Z_t)
+            = (+9.3123) + (3814.42 - (+3.6000) x 4535.11) / 361.25
+            = (+9.3123) + (3814.42 - (16326.40)) / 361.25
+            = (+9.3123) + -34.6352
+   --> e_III= -25.3229 in        [e_o must be >= this]
+
+ Naaman Line IV [LOWER bound on e_o]
+   Condition : service, bot fiber tension >= sigma_ts
+   Formula   : e_o >= k_t + [1/(eta*F_i)](M_max + sigma_ts * Z_b)
+            = (-3.4931) + (3814.42 + (-0.4648) x 1701.14) / 361.25
+            = (-3.4931) + (3814.42 + (-790.62)) / 361.25
+            = (-3.4931) + 8.3704
+   --> e_IV = 4.8773 in        [e_o must be >= this]
+
+ GOVERNING ECCENTRICITY BOUNDS:
+   UPPER bounds:  e_I  = +15.3976 in  |  e_II  = +11.9020 in
+   e_max = min(e_I, e_II)   = min(+15.3976, +11.9020) = +11.9020 in   [Line II governs]
+   LOWER bounds:  e_III= -25.3229 in  |  e_IV  = +4.8773 in
+   e_min = max(e_III,e_IV) = max(-25.3229, +4.8773) = +4.8773 in   [Line IV governs]
+   Physical limit: e_cover = 18.3621 in  (cover = 2.0 in)
+   --> FEASIBLE:  +4.8773 in  <=  e_o  <=  +11.9020 in  (range = 7.0247 in)
+   Tendon CG: e_cg = 10.7721 in  --> INSIDE  feasible range  [OK]
+
+============================================================
+ SECTION AT  x = 20 ft  (x/L = 0.312)
+============================================================
+   M_min = M_i = 2678.50 kip-in  (transfer, SW only)
+   M_max = M_T = 6216.10 kip-in  (service,  SW+SDL+LL)
+   e_cg  = 14.3621 in  (tendon group centroid at this x)
+
+ Naaman Line I  [UPPER bound on e_o]
+   Condition : transfer, top fiber tension >= sigma_ti
+   Formula   : e_o <= k_b + (1/F_i)(M_min - sigma_ti * Z_t)
+            = (+9.3123) + (2678.50 - (-0.2078) x 4535.11) / 425.00
+            = (+9.3123) + (2678.50 - (-942.61)) / 425.00
+            = (+9.3123) + 8.5202
+   --> e_I  = 17.8326 in        [e_o must be <= this]
+
+ Naaman Line II [UPPER bound on e_o]
+   Condition : transfer, bot fiber compression <= sigma_ci
+   Formula   : e_o <= k_t + (1/F_i)(M_min + sigma_ci * Z_b)
+            = (-3.4931) + (2678.50 + (+2.8800) x 1701.14) / 425.00
+            = (-3.4931) + (2678.50 + (4899.29)) / 425.00
+            = (-3.4931) + 17.8301
+   --> e_II = 14.3370 in        [e_o must be <= this]
+
+ Naaman Line III [LOWER bound on e_o]
+   Condition : service, top fiber compression <= sigma_cs
+   Formula   : e_o >= k_b + [1/(eta*F_i)](M_max - sigma_cs * Z_t)
+            = (+9.3123) + (6216.10 - (+3.6000) x 4535.11) / 361.25
+            = (+9.3123) + (6216.10 - (16326.40)) / 361.25
+            = (+9.3123) + -27.9870
+   --> e_III= -18.6747 in        [e_o must be >= this]
+
+ Naaman Line IV [LOWER bound on e_o]
+   Condition : service, bot fiber tension >= sigma_ts
+   Formula   : e_o >= k_t + [1/(eta*F_i)](M_max + sigma_ts * Z_b)
+            = (-3.4931) + (6216.10 + (-0.4648) x 1701.14) / 361.25
+            = (-3.4931) + (6216.10 + (-790.62)) / 361.25
+            = (-3.4931) + 15.0186
+   --> e_IV = 11.5255 in        [e_o must be >= this]
+
+ GOVERNING ECCENTRICITY BOUNDS:
+   UPPER bounds:  e_I  = +17.8326 in  |  e_II  = +14.3370 in
+   e_max = min(e_I, e_II)   = min(+17.8326, +14.3370) = +14.3370 in   [Line II governs]
+   LOWER bounds:  e_III= -18.6747 in  |  e_IV  = +11.5255 in
+   e_min = max(e_III,e_IV) = max(-18.6747, +11.5255) = +11.5255 in   [Line IV governs]
+   Physical limit: e_cover = 18.3621 in  (cover = 2.0 in)
+   --> FEASIBLE:  +11.5255 in  <=  e_o  <=  +14.3370 in  (range = 2.8115 in)
+   Tendon CG: e_cg = 14.3621 in  --> OUTSIDE feasible range  [FAIL]
+
+============================================================
+ SECTION AT  x = 32 ft  (x/L = 0.500)
+============================================================
+   M_min = M_i = 3116.80 kip-in  (transfer, SW only)
+   M_max = M_T = 7233.28 kip-in  (service,  SW+SDL+LL)
+   e_cg  = 14.3621 in  (tendon group centroid at this x)
+
+ Naaman Line I  [UPPER bound on e_o]
+   Condition : transfer, top fiber tension >= sigma_ti
+   Formula   : e_o <= k_b + (1/F_i)(M_min - sigma_ti * Z_t)
+            = (+9.3123) + (3116.80 - (-0.2078) x 4535.11) / 425.00
+            = (+9.3123) + (3116.80 - (-942.61)) / 425.00
+            = (+9.3123) + 9.5515
+   --> e_I  = 18.8639 in        [e_o must be <= this]
+
+ Naaman Line II [UPPER bound on e_o]
+   Condition : transfer, bot fiber compression <= sigma_ci
+   Formula   : e_o <= k_t + (1/F_i)(M_min + sigma_ci * Z_b)
+            = (-3.4931) + (3116.80 + (+2.8800) x 1701.14) / 425.00
+            = (-3.4931) + (3116.80 + (4899.29)) / 425.00
+            = (-3.4931) + 18.8614
+   --> e_II = 15.3683 in        [e_o must be <= this]
+
+ Naaman Line III [LOWER bound on e_o]
+   Condition : service, top fiber compression <= sigma_cs
+   Formula   : e_o >= k_b + [1/(eta*F_i)](M_max - sigma_cs * Z_t)
+            = (+9.3123) + (7233.28 - (+3.6000) x 4535.11) / 361.25
+            = (+9.3123) + (7233.28 - (16326.40)) / 361.25
+            = (+9.3123) + -25.1713
+   --> e_III= -15.8589 in        [e_o must be >= this]
+
+ Naaman Line IV [LOWER bound on e_o]
+   Condition : service, bot fiber tension >= sigma_ts
+   Formula   : e_o >= k_t + [1/(eta*F_i)](M_max + sigma_ts * Z_b)
+            = (-3.4931) + (7233.28 + (-0.4648) x 1701.14) / 361.25
+            = (-3.4931) + (7233.28 + (-790.62)) / 361.25
+            = (-3.4931) + 17.8344
+   --> e_IV = 14.3412 in        [e_o must be >= this]
+
+ GOVERNING ECCENTRICITY BOUNDS:
+   UPPER bounds:  e_I  = +18.8639 in  |  e_II  = +15.3683 in
+   e_max = min(e_I, e_II)   = min(+18.8639, +15.3683) = +15.3683 in   [Line II governs]
+   LOWER bounds:  e_III= -15.8589 in  |  e_IV  = +14.3412 in
+   e_min = max(e_III,e_IV) = max(-15.8589, +14.3412) = +14.3412 in   [Line IV governs]
+   Physical limit: e_cover = 18.3621 in  (cover = 2.0 in)
+   --> FEASIBLE:  +14.3412 in  <=  e_o  <=  +15.3683 in  (range = 1.0270 in)
+   Tendon CG: e_cg = 14.3621 in  --> INSIDE  feasible range  [OK]
+

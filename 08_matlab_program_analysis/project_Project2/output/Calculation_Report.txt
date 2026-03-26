@@ -1,0 +1,927 @@
+==================================================================
+   CEE 530 PRESTRESSED CONCRETE  —  PROJECT 1
+   Double-T Beam: Stress Analysis and Shear Design
+==================================================================
+   Student      : Chidchanok Pleesudjai (Fen)
+   Date         : 2026-03-17
+   Code edition : CEE530
+==================================================================
+
+==================================================================
+   PART 1 — GIVEN DATA
+==================================================================
+
+1.1  BEAM GEOMETRY
+------------------------------------------------------------------
+  Span:  L = (20 + 24 + 20) ft x 12 in/ft = 768 in  (64.0 ft)
+
+1.2  CROSS-SECTION  (Double-T / TT, symmetric)
+------------------------------------------------------------------
+  Section origin : y = 0 at BOTTOM of stems, positive upward
+  Top flange     : 120 in wide x 2 in thick   (y = 26 to 28 in)
+  Left stem      : x = -32 to -28.25 in        (y = 0 to 26 in)
+  Right stem     : x = +28.25 to +32 in        (y = 0 to 26 in)
+  Total depth    : h = 28 in
+
+1.3  MATERIAL PROPERTIES
+------------------------------------------------------------------
+  Concrete : f'c  = 6.0 ksi   (28-day strength)
+             f'ci = 4.8 ksi   (strength at transfer)
+             Ec   = 4700 ksi
+  PS steel : fpu  = 270 ksi   (ultimate)
+             fpy  = 243 ksi   (0.90 fpu)
+             Eps  = 28500 ksi
+  Mild     : fy   = 60 ksi,  Es = 29000 ksi
+
+1.4  APPLIED LOADS
+------------------------------------------------------------------
+  Self-weight:
+    w_sw = Ac * rho_c
+         = 487.0000 in^2 * (150/1728 lb/in^3) / 1000  [kip conversion]
+         = 0.042274 kip/in  =  0.5073 kip/ft
+
+  Superimposed Dead Load  (2-in concrete topping, 150 pcf):
+    w_SDL = 2 in * 120 in * (150/1728 lb/in^3) / 1000
+          = 0.020833 kip/in  =  0.2500 kip/ft
+
+  Live Load:
+    w_LL  = 0.42 kip/ft / 12 in/ft
+          = 0.035000 kip/in  =  0.4200 kip/ft
+
+1.5  PRESTRESSING TENDONS  (4 strands, fully bonded)
+------------------------------------------------------------------
+  Strand area    : Aps = 0.153 in^2  per strand  (0.5-in diameter, Grade 270)
+  Initial force  : Pi  = 25.0 kips  per strand
+    fpi = Pi/Aps = 25.0 / 0.153 = 163.4 ksi
+
+  Tendon layout (y from bottom):
+    Tendon 1 — left stem,  straight : y = 6 in  (constant)
+    Tendon 2 — left stem,  harped   : y = 20.36 in at supports,
+                                       y = 6 in  from x = 240 to 528 in
+    Tendon 3 — right stem, straight : y = 6 in  (constant, mirror of T1)
+    Tendon 4 — right stem, harped   : same profile as Tendon 2
+
+  Total initial prestress:   Fi = 4 x 25.0 = 100.0 kips
+  Prestress losses:          15%  (given)
+  Loss factor:               eta = 1 - 0.15 = 0.85
+  Effective prestress:       Fe  = eta * Fi = 0.85 * 100.0 = 85.0 kips
+
+==================================================================
+   PART 2 — SECTION PROPERTIES  (Shoelace / Green's Theorem)
+==================================================================
+
+2.1  CROSS-SECTIONAL AREA
+------------------------------------------------------------------
+  Formula (Shoelace):
+    A = (1/2) * |Sum_{i=1}^{n} (x_i * y_{i+1} - x_{i+1} * y_i)|
+
+  A = 487.0000 in^2
+
+2.2  CENTROID  (from bottom, y = 0 at stem soffit)
+------------------------------------------------------------------
+  Formula:
+    yc = [Sum (x_i*y_{i+1}-x_{i+1}*y_i)*(y_i+y_{i+1})] / (6*A)
+
+  yc = 20.3621 in   from bottom
+  yt = y_top - yc  =  28.000 - 20.3621  =  7.6379 in   (centroid to TOP fiber)
+  yb = yc - 0      =  20.3621 - 0      =  20.3621 in   (centroid to BOTTOM fiber)
+
+2.3  MOMENT OF INERTIA  (centroidal x-axis)
+------------------------------------------------------------------
+  Formula:
+    Ic = (1/12)*|Sum (x_i*y_{i+1}-x_{i+1}*y_i)*(y_i^2+y_i*y_{i+1}+y_{i+1}^2)|
+
+  Ic = 34638.82 in^4
+
+2.4  SECTION MODULI
+------------------------------------------------------------------
+  St = Ic / yt  =  34638.82 / 7.6379  =  4535.1121 in^3   (top)
+  Sb = Ic / yb  =  34638.82 / 20.3621  =  1701.1434 in^3   (bottom)
+
+2.5  KERN POINTS  (limits for no-tension design)
+------------------------------------------------------------------
+  r^2 = Ic / A  =  34638.82 / 487.0000  =  71.1269 in^2
+  kb  = r^2 / yt  =  71.1269 / 7.6379  =  9.3123 in   (upper kern, bottom tendons)
+  kt  = r^2 / yb  =  71.1269 / 20.3621  =  3.4931 in   (lower kern, top tendons)
+
+==================================================================
+   PART 3 — ALLOWABLE STRESSES  [CEE530]
+==================================================================
+
+3.1  AT TRANSFER  (f'ci = 4.8 ksi)
+------------------------------------------------------------------
+  Compression (general):
+    f_ci_allow = +0.60 * f'ci  =  0.60 * 4.8  =  +2.880 ksi
+  Compression (end regions):
+    f_ci_end   = +0.60 * f'ci  =  0.60 * 4.8  =  +2.880 ksi   [CEE530: same as general]
+  Tension (general):
+    f_ti_allow = -3 * sqrt(f'ci_psi)  =  -3 * sqrt(4800)  =  -0.208 ksi
+  Tension (end regions):
+    f_ti_end   = -6 * sqrt(f'ci_psi)  =  -6 * sqrt(4800)  =  -0.416 ksi
+
+3.2  AT SERVICE  (f'c = 6.0 ksi)
+------------------------------------------------------------------
+  Compression (sustained SW+SDL):
+    f_cs_sust  = +0.45 * f'c  =  0.45 * 6.0  =  +2.700 ksi
+  Compression (total SW+SDL+LL):
+    f_cs_total = +0.60 * f'c  =  0.60 * 6.0  =  +3.600 ksi
+  Tension Class C:
+    f_ts = -12 * sqrt(f'c_psi)  =  -12 * sqrt(6000)  =  -0.930 ksi
+  Tension Class U boundary:
+    f_tu = -6.0 * sqrt(f'c_psi)  =  -6.0 * sqrt(6000)  =  -0.465 ksi   [CEE530]
+
+==================================================================
+   PART 4 — TENDON ECCENTRICITY AT ANALYSIS SECTIONS
+==================================================================
+
+  e = yc - y_tendon   (positive = tendon BELOW centroid)
+  yc = 20.3621 in  (from bottom)
+
+  x = 0 in  (0.0 ft, x/L = 0.000)         
+    Tendon 1: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Tendon 2: y_t = 20.36 in  -->  e = yc - y_t = 20.3621 - 20.36 = +0.0021 in
+    Tendon 3: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Tendon 4: y_t = 20.36 in  -->  e = yc - y_t = 20.3621 - 20.36 = +0.0021 in
+    Force-weighted average:  e_eff = 7.1821 in
+
+  x = 120 in  (10.0 ft, x/L = 0.156)      
+    Tendon 1: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Tendon 2: y_t = 13.18 in  -->  e = yc - y_t = 20.3621 - 13.18 = +7.1821 in
+    Tendon 3: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Tendon 4: y_t = 13.18 in  -->  e = yc - y_t = 20.3621 - 13.18 = +7.1821 in
+    Force-weighted average:  e_eff = 10.7721 in
+
+  x = 240 in  (20.0 ft, x/L = 0.312)      
+    Tendon 1: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Tendon 2: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Tendon 3: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Tendon 4: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Force-weighted average:  e_eff = 14.3621 in
+
+  x = 384 in  (32.0 ft, x/L = 0.500)      
+    Tendon 1: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Tendon 2: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Tendon 3: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Tendon 4: y_t = 6.00 in  -->  e = yc - y_t = 20.3621 - 6.00 = +14.3621 in
+    Force-weighted average:  e_eff = 14.3621 in
+
+==================================================================
+   PART 5 — STAGE 1: TRANSFER  (eta = 1.00)
+   Concrete strength = f'ci = 4.8 ksi  |  M = M_sw only
+==================================================================
+
+  SIGN CONVENTION:  Compression = positive (+)   Tension = negative (-)
+
+  FIBER STRESS EQUATIONS:
+
+    f_top = +F/Ac  -  F*e/St  +  M/St
+    f_bot = +F/Ac  +  F*e/Sb  -  M/Sb
+
+  TERMS:
+    F   = effective prestress force at section  (kips)
+    Ac  = 487.0000 in^2
+    e   = yc - y_tendon(eff)  (in, positive when tendon below centroid)
+    St  = Ic/yt  =  34638.82 / 7.6379  =  4535.1121 in^3
+    Sb  = Ic/yb  =  34638.82 / 20.3621  =  1701.1434 in^3
+    M   = total moment at section  (kip-in, sagging = positive)
+
+  F = Fi = 100.0 kips  (full prestress, eta = 1.00, no losses at transfer)
+  Allowable:  -0.208 ksi (tension)  <=  f  <=  +2.880 ksi (compression)
+
+------------------------------------------------------------------
+  SECTION:  x = 0 in  (0.0 ft, x/L = 0.000)
+------------------------------------------------------------------
+
+  Self-weight moment:
+    M_sw = w_sw * x * (L - x) / 2
+         = 0.042274 * 0.0 * (768 - 0.0) / 2
+         = 0.00 kip-in  =  0.000 kip-ft
+
+  Prestress at this section:
+    F   = 100.0000 kips
+    e   = 7.1821 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +100.0000/487.0000  -  100.0000*7.1821/4535.1121  +  0.0000/4535.1121
+
+           =  +0.2053        -  (0.1584)             +  (0.0000)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +0.0470 ksi
+
+    Allowable:  -0.208 ksi (T)  <=  f_top  <=  +2.880 ksi (C)
+    RESULT:  f_top = +0.0470 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +100.0000/487.0000  +  100.0000*7.1821/1701.1434  -  0.0000/1701.1434
+
+           =  +0.2053        +  (0.4222)             -  (0.0000)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = +0.6275 ksi
+
+    Allowable:  -0.208 ksi (T)  <=  f_bot  <=  +2.880 ksi (C)
+    RESULT:  f_bot = +0.6275 ksi   -->  PASS
+
+------------------------------------------------------------------
+  SECTION:  x = 120 in  (10.0 ft, x/L = 0.156)
+------------------------------------------------------------------
+
+  Self-weight moment:
+    M_sw = w_sw * x * (L - x) / 2
+         = 0.042274 * 120.0 * (768 - 120.0) / 2
+         = 1643.63 kip-in  =  136.969 kip-ft
+
+  Prestress at this section:
+    F   = 100.0000 kips
+    e   = 10.7721 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +100.0000/487.0000  -  100.0000*10.7721/4535.1121  +  1643.6250/4535.1121
+
+           =  +0.2053        -  (0.2375)             +  (0.3624)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +0.3302 ksi
+
+    Allowable:  -0.208 ksi (T)  <=  f_top  <=  +2.880 ksi (C)
+    RESULT:  f_top = +0.3302 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +100.0000/487.0000  +  100.0000*10.7721/1701.1434  -  1643.6250/1701.1434
+
+           =  +0.2053        +  (0.6332)             -  (0.9662)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = -0.1276 ksi
+
+    Allowable:  -0.208 ksi (T)  <=  f_bot  <=  +2.880 ksi (C)
+    RESULT:  f_bot = -0.1276 ksi   -->  PASS
+
+------------------------------------------------------------------
+  SECTION:  x = 240 in  (20.0 ft, x/L = 0.312)
+------------------------------------------------------------------
+
+  Self-weight moment:
+    M_sw = w_sw * x * (L - x) / 2
+         = 0.042274 * 240.0 * (768 - 240.0) / 2
+         = 2678.50 kip-in  =  223.208 kip-ft
+
+  Prestress at this section:
+    F   = 100.0000 kips
+    e   = 14.3621 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +100.0000/487.0000  -  100.0000*14.3621/4535.1121  +  2678.5000/4535.1121
+
+           =  +0.2053        -  (0.3167)             +  (0.5906)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +0.4793 ksi
+
+    Allowable:  -0.208 ksi (T)  <=  f_top  <=  +2.880 ksi (C)
+    RESULT:  f_top = +0.4793 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +100.0000/487.0000  +  100.0000*14.3621/1701.1434  -  2678.5000/1701.1434
+
+           =  +0.2053        +  (0.8443)             -  (1.5745)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = -0.5249 ksi
+
+    Allowable:  -0.208 ksi (T)  <=  f_bot  <=  +2.880 ksi (C)
+    RESULT:  f_bot = -0.5249 ksi   -->  FAIL  (limit [-0.208, +2.880])
+
+------------------------------------------------------------------
+  SECTION:  x = 384 in  (32.0 ft, x/L = 0.500)
+------------------------------------------------------------------
+
+  Self-weight moment:
+    M_sw = w_sw * x * (L - x) / 2
+         = 0.042274 * 384.0 * (768 - 384.0) / 2
+         = 3116.80 kip-in  =  259.733 kip-ft
+
+  Prestress at this section:
+    F   = 100.0000 kips
+    e   = 14.3621 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +100.0000/487.0000  -  100.0000*14.3621/4535.1121  +  3116.8000/4535.1121
+
+           =  +0.2053        -  (0.3167)             +  (0.6873)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +0.5759 ksi
+
+    Allowable:  -0.208 ksi (T)  <=  f_top  <=  +2.880 ksi (C)
+    RESULT:  f_top = +0.5759 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +100.0000/487.0000  +  100.0000*14.3621/1701.1434  -  3116.8000/1701.1434
+
+           =  +0.2053        +  (0.8443)             -  (1.8322)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = -0.7826 ksi
+
+    Allowable:  -0.208 ksi (T)  <=  f_bot  <=  +2.880 ksi (C)
+    RESULT:  f_bot = -0.7826 ksi   -->  FAIL  (limit [-0.208, +2.880])
+
+==================================================================
+   PART 6 — STAGE 2: SERVICE - SUSTAINED  (eta = 0.85)
+   Concrete strength = f'c = 6.0 ksi  |  M = M_sw + M_SDL
+==================================================================
+
+  SIGN CONVENTION:  Compression = positive (+)   Tension = negative (-)
+
+  FIBER STRESS EQUATIONS:
+
+    f_top = +F/Ac  -  F*e/St  +  M/St
+    f_bot = +F/Ac  +  F*e/Sb  -  M/Sb
+
+  TERMS:
+    F   = effective prestress force at section  (kips)
+    Ac  = 487.0000 in^2
+    e   = yc - y_tendon(eff)  (in, positive when tendon below centroid)
+    St  = Ic/yt  =  34638.82 / 7.6379  =  4535.1121 in^3
+    Sb  = Ic/yb  =  34638.82 / 20.3621  =  1701.1434 in^3
+    M   = total moment at section  (kip-in, sagging = positive)
+
+  F = eta * Fi  =  0.85 * 100.0  =  85.0 kips
+  Allowable:  -0.930 ksi (tension)  <=  f  <=  +2.700 ksi (compression)
+
+------------------------------------------------------------------
+  SECTION:  x = 0 in  (0.0 ft, x/L = 0.000)
+------------------------------------------------------------------
+
+  Sustained moment  (M_sw + M_SDL):
+    M = (w_sw + w_SDL) * x * (L - x) / 2
+      = (0.042274 + 0.020833) * 0.0 * (768 - 0.0) / 2
+      = (0.063108) * 0.0 * 768.0 / 2
+      = 0.00 kip-in  =  0.000 kip-ft
+
+  Prestress at this section:
+    F   = 85.0000 kips
+    e   = 7.1821 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +85.0000/487.0000  -  85.0000*7.1821/4535.1121  +  0.0000/4535.1121
+
+           =  +0.1745        -  (0.1346)             +  (0.0000)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +0.0399 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_top  <=  +2.700 ksi (C)
+    RESULT:  f_top = +0.0399 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +85.0000/487.0000  +  85.0000*7.1821/1701.1434  -  0.0000/1701.1434
+
+           =  +0.1745        +  (0.3589)             -  (0.0000)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = +0.5334 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_bot  <=  +2.700 ksi (C)
+    RESULT:  f_bot = +0.5334 ksi   -->  PASS
+
+------------------------------------------------------------------
+  SECTION:  x = 120 in  (10.0 ft, x/L = 0.156)
+------------------------------------------------------------------
+
+  Sustained moment  (M_sw + M_SDL):
+    M = (w_sw + w_SDL) * x * (L - x) / 2
+      = (0.042274 + 0.020833) * 120.0 * (768 - 120.0) / 2
+      = (0.063108) * 120.0 * 648.0 / 2
+      = 2453.63 kip-in  =  204.469 kip-ft
+
+  Prestress at this section:
+    F   = 85.0000 kips
+    e   = 10.7721 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +85.0000/487.0000  -  85.0000*10.7721/4535.1121  +  2453.6250/4535.1121
+
+           =  +0.1745        -  (0.2019)             +  (0.5410)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +0.5137 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_top  <=  +2.700 ksi (C)
+    RESULT:  f_top = +0.5137 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +85.0000/487.0000  +  85.0000*10.7721/1701.1434  -  2453.6250/1701.1434
+
+           =  +0.1745        +  (0.5382)             -  (1.4423)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = -0.7296 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_bot  <=  +2.700 ksi (C)
+    RESULT:  f_bot = -0.7296 ksi   -->  PASS
+
+------------------------------------------------------------------
+  SECTION:  x = 240 in  (20.0 ft, x/L = 0.312)
+------------------------------------------------------------------
+
+  Sustained moment  (M_sw + M_SDL):
+    M = (w_sw + w_SDL) * x * (L - x) / 2
+      = (0.042274 + 0.020833) * 240.0 * (768 - 240.0) / 2
+      = (0.063108) * 240.0 * 528.0 / 2
+      = 3998.50 kip-in  =  333.208 kip-ft
+
+  Prestress at this section:
+    F   = 85.0000 kips
+    e   = 14.3621 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +85.0000/487.0000  -  85.0000*14.3621/4535.1121  +  3998.5000/4535.1121
+
+           =  +0.1745        -  (0.2692)             +  (0.8817)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +0.7870 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_top  <=  +2.700 ksi (C)
+    RESULT:  f_top = +0.7870 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +85.0000/487.0000  +  85.0000*14.3621/1701.1434  -  3998.5000/1701.1434
+
+           =  +0.1745        +  (0.7176)             -  (2.3505)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = -1.4583 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_bot  <=  +2.700 ksi (C)
+    RESULT:  f_bot = -1.4583 ksi   -->  FAIL  (limit [-0.930, +2.700])
+
+------------------------------------------------------------------
+  SECTION:  x = 384 in  (32.0 ft, x/L = 0.500)
+------------------------------------------------------------------
+
+  Sustained moment  (M_sw + M_SDL):
+    M = (w_sw + w_SDL) * x * (L - x) / 2
+      = (0.042274 + 0.020833) * 384.0 * (768 - 384.0) / 2
+      = (0.063108) * 384.0 * 384.0 / 2
+      = 4652.80 kip-in  =  387.733 kip-ft
+
+  Prestress at this section:
+    F   = 85.0000 kips
+    e   = 14.3621 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +85.0000/487.0000  -  85.0000*14.3621/4535.1121  +  4652.8000/4535.1121
+
+           =  +0.1745        -  (0.2692)             +  (1.0260)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +0.9313 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_top  <=  +2.700 ksi (C)
+    RESULT:  f_top = +0.9313 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +85.0000/487.0000  +  85.0000*14.3621/1701.1434  -  4652.8000/1701.1434
+
+           =  +0.1745        +  (0.7176)             -  (2.7351)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = -1.8429 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_bot  <=  +2.700 ksi (C)
+    RESULT:  f_bot = -1.8429 ksi   -->  FAIL  (limit [-0.930, +2.700])
+
+==================================================================
+   PART 7 — STAGE 3: SERVICE - TOTAL  (eta = 0.85)
+   Concrete strength = f'c = 6.0 ksi  |  M = M_sw + M_SDL + M_LL
+==================================================================
+
+  SIGN CONVENTION:  Compression = positive (+)   Tension = negative (-)
+
+  FIBER STRESS EQUATIONS:
+
+    f_top = +F/Ac  -  F*e/St  +  M/St
+    f_bot = +F/Ac  +  F*e/Sb  -  M/Sb
+
+  TERMS:
+    F   = effective prestress force at section  (kips)
+    Ac  = 487.0000 in^2
+    e   = yc - y_tendon(eff)  (in, positive when tendon below centroid)
+    St  = Ic/yt  =  34638.82 / 7.6379  =  4535.1121 in^3
+    Sb  = Ic/yb  =  34638.82 / 20.3621  =  1701.1434 in^3
+    M   = total moment at section  (kip-in, sagging = positive)
+
+  F = eta * Fi  =  0.85 * 100.0  =  85.0 kips
+  Allowable:  -0.930 ksi (tension)  <=  f  <=  +3.600 ksi (compression)
+
+------------------------------------------------------------------
+  SECTION:  x = 0 in  (0.0 ft, x/L = 0.000)
+------------------------------------------------------------------
+
+  Total moment  (M_sw + M_SDL + M_LL):
+    M = (w_sw + w_SDL + w_LL) * x * (L - x) / 2
+      = (0.042274 + 0.020833 + 0.035000) * 0.0 * (768 - 0.0) / 2
+      = (0.098108) * 0.0 * 768.0 / 2
+      = 0.00 kip-in  =  0.000 kip-ft
+
+  Prestress at this section:
+    F   = 85.0000 kips
+    e   = 7.1821 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +85.0000/487.0000  -  85.0000*7.1821/4535.1121  +  0.0000/4535.1121
+
+           =  +0.1745        -  (0.1346)             +  (0.0000)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +0.0399 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_top  <=  +3.600 ksi (C)
+    RESULT:  f_top = +0.0399 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +85.0000/487.0000  +  85.0000*7.1821/1701.1434  -  0.0000/1701.1434
+
+           =  +0.1745        +  (0.3589)             -  (0.0000)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = +0.5334 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_bot  <=  +3.600 ksi (C)
+    RESULT:  f_bot = +0.5334 ksi   -->  PASS
+
+------------------------------------------------------------------
+  SECTION:  x = 120 in  (10.0 ft, x/L = 0.156)
+------------------------------------------------------------------
+
+  Total moment  (M_sw + M_SDL + M_LL):
+    M = (w_sw + w_SDL + w_LL) * x * (L - x) / 2
+      = (0.042274 + 0.020833 + 0.035000) * 120.0 * (768 - 120.0) / 2
+      = (0.098108) * 120.0 * 648.0 / 2
+      = 3814.42 kip-in  =  317.869 kip-ft
+
+  Prestress at this section:
+    F   = 85.0000 kips
+    e   = 10.7721 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +85.0000/487.0000  -  85.0000*10.7721/4535.1121  +  3814.4250/4535.1121
+
+           =  +0.1745        -  (0.2019)             +  (0.8411)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +0.8137 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_top  <=  +3.600 ksi (C)
+    RESULT:  f_top = +0.8137 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +85.0000/487.0000  +  85.0000*10.7721/1701.1434  -  3814.4250/1701.1434
+
+           =  +0.1745        +  (0.5382)             -  (2.2423)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = -1.5295 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_bot  <=  +3.600 ksi (C)
+    RESULT:  f_bot = -1.5295 ksi   -->  FAIL  (limit [-0.930, +3.600])
+
+------------------------------------------------------------------
+  SECTION:  x = 240 in  (20.0 ft, x/L = 0.312)
+------------------------------------------------------------------
+
+  Total moment  (M_sw + M_SDL + M_LL):
+    M = (w_sw + w_SDL + w_LL) * x * (L - x) / 2
+      = (0.042274 + 0.020833 + 0.035000) * 240.0 * (768 - 240.0) / 2
+      = (0.098108) * 240.0 * 528.0 / 2
+      = 6216.10 kip-in  =  518.008 kip-ft
+
+  Prestress at this section:
+    F   = 85.0000 kips
+    e   = 14.3621 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +85.0000/487.0000  -  85.0000*14.3621/4535.1121  +  6216.1000/4535.1121
+
+           =  +0.1745        -  (0.2692)             +  (1.3707)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +1.2760 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_top  <=  +3.600 ksi (C)
+    RESULT:  f_top = +1.2760 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +85.0000/487.0000  +  85.0000*14.3621/1701.1434  -  6216.1000/1701.1434
+
+           =  +0.1745        +  (0.7176)             -  (3.6541)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = -2.7619 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_bot  <=  +3.600 ksi (C)
+    RESULT:  f_bot = -2.7619 ksi   -->  FAIL  (limit [-0.930, +3.600])
+
+------------------------------------------------------------------
+  SECTION:  x = 384 in  (32.0 ft, x/L = 0.500)
+------------------------------------------------------------------
+
+  Total moment  (M_sw + M_SDL + M_LL):
+    M = (w_sw + w_SDL + w_LL) * x * (L - x) / 2
+      = (0.042274 + 0.020833 + 0.035000) * 384.0 * (768 - 384.0) / 2
+      = (0.098108) * 384.0 * 384.0 / 2
+      = 7233.28 kip-in  =  602.773 kip-ft
+
+  Prestress at this section:
+    F   = 85.0000 kips
+    e   = 14.3621 in   (force-weighted average eccentricity)
+
+  *** TOP FIBER ***
+
+    f_top  =  +F/Ac  -  F*e/St  +  M/St
+
+           =  +85.0000/487.0000  -  85.0000*14.3621/4535.1121  +  7233.2800/4535.1121
+
+           =  +0.1745        -  (0.2692)             +  (1.5950)
+              [P/A unif]      [eccen, top]           [moment]
+
+    f_top  = +1.5003 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_top  <=  +3.600 ksi (C)
+    RESULT:  f_top = +1.5003 ksi   -->  PASS
+
+  *** BOTTOM FIBER ***
+
+    f_bot  =  +F/Ac  +  F*e/Sb  -  M/Sb
+
+           =  +85.0000/487.0000  +  85.0000*14.3621/1701.1434  -  7233.2800/1701.1434
+
+           =  +0.1745        +  (0.7176)             -  (4.2520)
+              [P/A unif]      [eccen, bot]           [moment]
+
+    f_bot  = -3.3599 ksi
+
+    Allowable:  -0.930 ksi (T)  <=  f_bot  <=  +3.600 ksi (C)
+    RESULT:  f_bot = -3.3599 ksi   -->  FAIL  (limit [-0.930, +3.600])
+
+==================================================================
+   PART 8 — SHEAR DESIGN  [ACI 318-19, Naaman Sec. 5.7]
+==================================================================
+
+  EQUATIONS:
+------------------------------------------------------------------
+    Vci = 0.6*lambda*sqrt(f'c)*bw*dp + Vd + (Vi/Mmax)*Mcr
+          >= Vci_min = 1.7*lambda*sqrt(f'c)*bw*dp
+    Mcr = (Ic/yb)*(fr + fce - fd)
+    fr  = 6*lambda*sqrt(f'c_psi)/1000
+    fce = Pe/Ac + Pe*e*yb/Ic   (at bottom fiber)
+    fd  = Md*yb/Ic             (DL stress at bottom, tensile magnitude)
+
+    Vcw = (3.5*lambda*sqrt(f'c) + 0.3*fpc)*bw*dp + Vp
+    fpc = Pe/Ac                (at centroid)
+    Vp  = sum Pe_i * sin(theta_i)  (vertical PS component, upward)
+
+    Vc  = min(Vci, Vcw)
+    Vs_req = max(Vu/phi - Vc, 0)
+    Av/s = Vs/(fy*dp)   for vertical stirrups (theta_s = 90 deg)
+
+  SECTION PROPERTIES FOR SHEAR:
+------------------------------------------------------------------
+    h   = 28.00 in
+    bw  = 7.50 in   (sum of stem widths at bottom)
+    Ac  = 487.0000 in^2
+    Ic  = 34638.82 in^4
+    yb  = 20.3621 in
+    yc  = 20.3621 in   (from bottom)
+
+  FACTORED LOADS:
+------------------------------------------------------------------
+    wu = 1.2*wDL + 1.6*wLL
+       = 1.2*(w_sw + w_SDL) + 1.6*w_LL
+       = 1.2*(0.042274 + 0.020833) + 1.6*(0.035000)
+       = 1.2*(0.063108) + 1.6*(0.035000)
+       = 0.131729 kip/in  =  1.5808 kip/ft
+
+    Max Vu = wu*L/2 = 0.131729 * 768/2 = 50.584 kips
+    Max Mu = wu*L^2/8 = 0.131729 * 768^2/8 = 19424.26 kip-in = 809.34 kip-ft
+
+  CRITICAL SECTION:  x = 22.27 in = 1.856 ft  (dp from face of support)
+    dp = max(h-y_ps, 0.8h) = max(15.486, 22.400) = 22.400 in
+
+  STEP 1 — MODULUS OF RUPTURE FOR SHEAR  (fr)
+------------------------------------------------------------------
+    fr = 6 * lambda * sqrt(f'c_psi) / 1000
+       = 6 * 1.0 * sqrt(6000) / 1000
+       = 6 * 1.0 * 0.0775
+       = 0.4648 ksi
+
+  STEP 2 — PRESTRESS STRESS AT BOTTOM FIBER  (fce)
+------------------------------------------------------------------
+    fce = Pe/Ac  +  Pe*e*yb/Ic
+
+        = 85.000/487.0000  +  85.000*7.8484*20.3621/34638.82
+        = 0.1745  +  0.3922
+        = 0.5667 ksi   (compression, +)
+
+  STEP 3 — DEAD LOAD FLEXURE STRESS AT BOTTOM FIBER  (fd)
+------------------------------------------------------------------
+    fd = Md * yb / Ic   (tensile magnitude, used in Mcr formula)
+
+    Md = w_DL * x * (L-x) / 2
+       = 0.063108 * 22.27 * (768 - 22.27) / 2
+       = 524.073 kip-in
+
+    fd = 524.073 * 20.3621 / 34638.82
+       = 0.3081 ksi   (tensile magnitude)
+
+  STEP 4 — CRACKING MOMENT  (Mcr)
+------------------------------------------------------------------
+    Mcr = (Ic/yb) * (fr + fce - fd)
+
+        = (34638.82 / 20.3621) * (0.4648 + 0.5667 - 0.3081)
+        = 1701.1434 * 0.7234
+        = 1230.57 kip-in  =  102.55 kip-ft
+
+  STEP 5 — FLEXURAL-SHEAR STRENGTH  (Vci)
+------------------------------------------------------------------
+    Vci = 0.6*lambda*sqrt(f'c)*bw*dp  +  Vd  +  (Vi/Mmax)*Mcr
+
+    w_ext = 1.2*w_SDL + 1.6*w_LL
+          = 1.2*0.020833 + 1.6*0.035000  =  0.081000 kip/in
+    Vi    = w_ext*(L/2 - x)  =  0.081000*(384.0-22.27)  =  29.300 kips
+    Mmax  = w_ext*x*(L-x)/2  =  0.081000*22.27*(768-22.27)/2  =  672.66 kip-in
+    Vd    = w_DL*(L/2-x)     =  0.063108*(384.0-22.27)  =  22.828 kips
+
+    Term 1: 0.6 * 1.0 * 0.0775 * 7.50 * 22.400  =  7.808 kips
+    Term 2: Vd                               =  22.828 kips
+    Term 3: (29.300/672.66) * 1230.57             =  53.602 kips
+
+    Vci (sum)   = 7.808 + 22.828 + 53.602  =  84.238 kips
+    Vci_min = 1.7*1.0*0.0775*7.50*22.400   =  22.122 kips
+    Vci (governing) = max(above)          =  84.238 kips
+
+  STEP 6 — WEB-SHEAR STRENGTH  (Vcw)
+------------------------------------------------------------------
+    Vcw = (3.5*lambda*sqrt(f'c) + 0.3*fpc) * bw * dp  +  Vp
+
+    fpc = Pe/Ac  =  85.000/487.0000  =  0.1745 ksi   (at centroid)
+    Vp  = 2.538 kips   (upward component, harped tendons at x = 22.27 in)
+
+    (3.5*1.0*0.0775 + 0.3*0.1745) * 7.50 * 22.400
+    = (0.2711 + 0.0524) * 7.50 * 22.400
+    = 0.3235 * 7.50 * 22.400
+    = 54.343 kips
+
+    Vcw = 54.343 + 2.538  =  56.881 kips
+
+  STEP 7 — CONCRETE SHEAR STRENGTH  Vc = min(Vci, Vcw)
+------------------------------------------------------------------
+    Vc  = min(84.238, 56.881)  =  56.881 kips
+    phi*Vc  =  0.75 * 56.881  =  42.661 kips
+
+    Vu (at critical section)  =  47.650 kips
+    CHECK: Vu = 47.650 > phi*Vc = 42.661    -->  Stirrups REQUIRED
+
+  STEP 8 — REQUIRED STIRRUP CONTRIBUTION  (Vs)
+------------------------------------------------------------------
+    Vs_req = max(Vu/phi - Vc, 0)
+           = max(47.650/0.75 - 56.881, 0)
+           = max(6.652, 0)
+           = 6.652 kips
+
+  STEP 9 — STIRRUP DESIGN  (#3 U-stirrups: Av = 2 x 0.11 = 0.22 in^2)
+------------------------------------------------------------------
+
+  Minimum Av/s  (ACI 318-19 Table 9.6.3.3, prestressed member):
+
+    Criterion 1:  Av/s_min1 = 0.75*sqrt(f'c_psi)*bw/fy  (ksi system)
+                           = 0.75 * 0.0775 * 7.50 / 60
+                           = 0.00726 in^2/in
+
+    Criterion 2:  Av/s_min2 = (50 psi)*bw/fy  (psi->ksi: 50/1000)
+                           = (50/1000) * 7.50 / 60
+                           = 0.00625 in^2/in
+
+    Criterion 3:  Av/s_min3 = Aps*fpu / (80*fy*dp) * sqrt(dp/bw)
+                           = 0.6120*270 / (80*60*22.400) * sqrt(22.400/7.50)
+                           = 0.00266 in^2/in
+
+    Av/s_min = max(0.00726, 0.00625, 0.00266)  =  0.00726 in^2/in
+
+  Required Av/s from Vs:
+    Av/s_demand = Vs / (fy * dp)
+               = 6.652 / (60 * 22.400)
+               = 0.00495 in^2/in
+
+    Av/s_governing = max(demand, min)  =  max(0.00495, 0.00726)  =  0.00726 in^2/in
+
+  Required spacing:
+    s_req = Av / (Av/s)  =  0.22 / 0.00726  =  30.30 in
+
+  Spacing limits:
+    s_max (basic) = min(3h/4, 24 in)  =  min(21.00, 24)  =  21.0 in
+
+    s_design = min(s_req, s_max)  =  min(30.30, 21.0)  =  21 in
+    USE:  #3 U-stirrups @ 21 in  throughout region near support
+
+==================================================================
+   PART 9 — STRESS SUMMARY  (all stages, all sections)
+==================================================================
+
+  Stage: Transfer               Limits: [-0.208, +2.880] ksi
+  Section                   f_top (ksi)  f_bot (ksi)  Top status    Bot status  
+  ------------------------------------------------------------------------
+  x =     0 in (  0.0 ft)      +0.0470     +0.6275  PASS          PASS        
+  x =   120 in ( 10.0 ft)      +0.3302     -0.1276  PASS          PASS        
+  x =   240 in ( 20.0 ft)      +0.4793     -0.5249  PASS          FAIL  (limit [-0.208, +2.880])
+  x =   384 in ( 32.0 ft)      +0.5759     -0.7826  PASS          FAIL  (limit [-0.208, +2.880])
+
+  Stage: Service_Sustained      Limits: [-0.930, +2.700] ksi
+  Section                   f_top (ksi)  f_bot (ksi)  Top status    Bot status  
+  ------------------------------------------------------------------------
+  x =     0 in (  0.0 ft)      +0.0399     +0.5334  PASS          PASS        
+  x =   120 in ( 10.0 ft)      +0.5137     -0.7296  PASS          PASS        
+  x =   240 in ( 20.0 ft)      +0.7870     -1.4583  PASS          FAIL  (limit [-0.930, +2.700])
+  x =   384 in ( 32.0 ft)      +0.9313     -1.8429  PASS          FAIL  (limit [-0.930, +2.700])
+
+  Stage: Service_Total          Limits: [-0.930, +3.600] ksi
+  Section                   f_top (ksi)  f_bot (ksi)  Top status    Bot status  
+  ------------------------------------------------------------------------
+  x =     0 in (  0.0 ft)      +0.0399     +0.5334  PASS          PASS        
+  x =   120 in ( 10.0 ft)      +0.8137     -1.5295  PASS          FAIL  (limit [-0.930, +3.600])
+  x =   240 in ( 20.0 ft)      +1.2760     -2.7619  PASS          FAIL  (limit [-0.930, +3.600])
+  x =   384 in ( 32.0 ft)      +1.5003     -3.3599  PASS          FAIL  (limit [-0.930, +3.600])
+
+==================================================================
+   END OF CALCULATION REPORT
+==================================================================

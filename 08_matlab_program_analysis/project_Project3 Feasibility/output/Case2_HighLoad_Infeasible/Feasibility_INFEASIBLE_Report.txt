@@ -1,0 +1,472 @@
+==================================================================
+   CEE 530 PRESTRESSED CONCRETE -- PROJECT 1, PART 2
+   Feasibility Design Chart -- INFEASIBLE CASE
+   Double-T Precast Prestressed Beam
+==================================================================
+   Student      : Chidchanok Pleesudjai (Fen)
+   Date         : 2026-03-18
+   Code edition : ACI 318-19  |  CEE 530 Class Limits
+   Reference    : Naaman, "Prestressed Concrete Analysis and Design,"
+                  Table 4.2, Row 2 -- Eccentricity Bounds (solve for e_o)
+   Sign conv.   : Compression = positive (+),  Tension = negative (-)
+   Case         : Case2_HighLoad_Infeasible
+==================================================================
+
+
+==================================================================
+   PART 1 -- GIVEN DATA
+==================================================================
+
+1.1  Geometry
+------------------------------------------------------------------
+  Span             L   = 768 in  (64.00 ft)
+  Section height   h   = 28 in
+  Flange width     bf  = 120 in
+  Flange thickness tf  = 2 in
+  Clear cover           = 2.0 in (minimum, to outermost tendon)
+
+1.2  Material Properties
+------------------------------------------------------------------
+  f'c    = 6.0 ksi          (28-day concrete compressive strength)
+  f'ci   = 4.8 ksi          (concrete strength at transfer)
+  fpu    = 270 ksi           (strand ultimate strength)
+  Aps    = 0.153 in^2/strand (0.5-in diameter low-relaxation)
+  Pi     = 25.0 kip/strand   (initial force per strand = Aps x fpi)
+  Losses = 15%  =>  eta = 1 - 0.15 = 0.85
+
+1.3  Tendon Layout
+------------------------------------------------------------------
+  Strand   Type      y at support (in)   y at midspan (in)
+  ------   ----      -----------------   -----------------
+  1, 3     Straight  6.0 (constant)      6.0
+  2, 4     Harped    yc = 20.362         6.0  (drape at x = 20 ft)
+
+1.4  Loads
+------------------------------------------------------------------
+  Self-weight:
+    w_sw  = Ac x rho_c = 487.000 x (150/1728/1000) = 0.04227 kip/in
+
+  Superimposed dead load (2-in topping, 120-in wide):
+    w_SDL = 2 x 120 x (150/1728/1000) = 0.02083 kip/in
+
+  Live load  [OVERRIDDEN]:
+    w_LL  = 0.17500 kip/in  (2100 lb/ft, 5.0x normal)
+
+  Total service load:
+    w_s   = w_sw + w_SDL + w_LL
+          = 0.04227 + 0.02083 + 0.17500 = 0.23811 kip/in
+
+1.5  Prestress Force Bounds -- from Magnel Diagram
+------------------------------------------------------------------
+  The Magnel diagram gives 1/F as a function of eccentricity e.
+  At e_cg(x) at each section, two bounds must both be satisfied:
+
+    F_min(x):  minimum F required  [service conditions -- Lines III/IV]
+               F >= F_min at every section
+
+    F_max(x):  maximum F permitted  [transfer conditions -- Lines I/II]
+               F <= F_max at every section
+
+  Global feasibility requires:  max(F_min) <= F <= min(F_max)
+
+  Section-by-section F_min and F_max at actual e_cg:
+  Sec  x (ft)   e_cg (in)   F_min (kip)   F_max (kip)   Status
+  ---  ------   ---------   -----------   -----------   ------
+   1       0       7.182           0.0         458.9   no moment (support)
+   2      10      10.772           Inf           Inf   INFEASIBLE -- no 1/F band at e_cg
+   3      20      14.362           Inf           Inf   INFEASIBLE -- no 1/F band at e_cg
+   4      32      14.362           Inf           Inf   INFEASIBLE -- no 1/F band at e_cg
+
+  F_req        = max(F_min) = Inf kip
+  F_max_global = min(F_max) = 458.9 kip
+
+  CONCLUSION: F_req = Inf -- one or more sections have no
+  upper bound on 1/F at e_cg (the Magnel zone does not exist
+  at the tendon location). No finite F satisfies all conditions.
+
+
+==================================================================
+   PART 2 -- CROSS-SECTION PROPERTIES
+==================================================================
+
+2.1  Shoelace Formula -- Polygon Vertices (CCW, y from bottom of stems)
+------------------------------------------------------------------
+  Vertex  x (in)    y (in)
+  ------  --------  ------
+   1      -60.000   26.000
+   2      -33.000   26.000
+   3      -32.000    0.000
+   4      -28.250    0.000
+   5      -27.250   26.000
+   6       27.250   26.000
+   7       28.250    0.000
+   8       32.000    0.000
+   9       33.000   26.000
+  10       60.000   26.000
+  11       60.000   28.000
+  12      -60.000   28.000
+
+2.2  Computed Properties
+------------------------------------------------------------------
+  Ac  = 487.000  in^2
+  Ic  = 34638.8  in^4
+  yc  = 20.362   in    (centroid from bottom of stems)
+  yt  = 28.0 - 20.362 = 7.638  in   (centroid to top fiber)
+  yb  = 20.362   in               (centroid to bottom fiber)
+
+  Section moduli:
+    Z_t = St = Ic / yt = 34638.8 / 7.638  = 4535.1  in^3   [top fiber]
+    Z_b = Sb = Ic / yb = 34638.8 / 20.362 = 1701.1  in^3   [bottom fiber]
+
+
+==================================================================
+   PART 3 -- ALLOWABLE STRESSES  (ACI 318-19 / CEE 530)
+==================================================================
+
+  SIGN CONVENTION: Compression = positive (+),  Tension = negative (-)
+
+3.1  At Transfer  (f'ci = 4.8 ksi)
+------------------------------------------------------------------
+  Compression (ACI 318-19 Sec. 24.5.3.1):
+    sigma_ci = +0.60 x f'ci = +0.60 x 4.8 = +2.880 ksi
+
+  Tension (ACI 318-19 Sec. 24.5.3.2):
+    sigma_ti = -3 x sqrt(f'ci x 1000) / 1000
+             = -3 x sqrt(4800) / 1000
+             = -3 x 69.28 / 1000
+             = -0.2078 ksi
+
+3.2  At Service  (f'c = 6.0 ksi, Total Load -- CEE 530 Class U)
+------------------------------------------------------------------
+  Compression:
+    sigma_cs = +0.60 x f'c = +0.60 x 6.0 = +3.600 ksi
+
+  Tension:
+    sigma_ts = -6 x sqrt(f'c x 1000) / 1000
+             = -6 x sqrt(6000) / 1000
+             = -6 x 77.46 / 1000
+             = -0.4648 ksi
+
+  NOTE: sigma_ti and sigma_ts are NEGATIVE (tension sign).
+        sigma_ci and sigma_cs are POSITIVE (compression sign).
+
+
+==================================================================
+   FEASIBILITY DIAGNOSTIC
+   Magnel Diagram -- No Feasible Prestress Force
+==================================================================
+
+  PROBLEM: F_req = Inf -- no finite prestress force can satisfy
+    all 4 Magnel stress conditions at the tendon eccentricity
+    e_cg(x) for one or more sections.
+
+  CAUSE: At infeasible sections, the Magnel upper bound (Line I or II,
+    transfer limits) falls BELOW the lower bound (Line III or IV,
+    service limits) at e_cg. No 1/F value satisfies both simultaneously.
+
+  SECTION SUMMARY  (1/F bounds at actual e_cg):
+    Sec  x(ft)   e_cg(in)   1/F lower   1/F upper   Status
+    ---  -----   --------   ---------   ---------   ------
+    1      0.0     7.1821      0.00218    999.00000   feasible
+    2     10.0    10.7721      0.00218      0.00143   INFEASIBLE
+    3     20.0    14.3621      0.00236      0.00106   INFEASIBLE
+    4     32.0    14.3621      0.00223      0.00091   INFEASIBLE
+
+  ROOT CAUSE:
+    Live load increased to 0.17500 kip/in (2100 lb/ft = 5.0x normal).
+    Excessive service moment drives Line III (service top compression)
+    below Line II (transfer bottom compression). No feasible zone.
+
+  WHAT TO FIX:
+    Option 1 -- Lower the tendon (increase eccentricity).
+    Option 2 -- Reduce live load or span.
+    Option 3 -- Increase f'c or f'ci.
+    Option 4 -- Use a deeper section (larger St, Sb, e_max).
+
+  Parts 4-7 below use F_ref (input force) to show WHY stresses
+  fail, making the infeasibility physically concrete.
+
+==================================================================
+   PART 4 -- KERN-POINT QUANTITIES  (F_ref = 100.0 kip, input force)
+==================================================================
+
+  NOTE: F_req is infinite -- no optimized F exists. Parts 4-7
+  use F_ref = 100.0 kip (sum of initial tendon forces from input)
+  to compute kern bounds and stresses, showing which limits are
+  violated and by how much.
+
+  NAAMAN KERN-POINT DEFINITIONS:
+    k_b = +St / Ac  = +r^2 / y_t  (lower kern, POSITIVE, below centroid)
+    k_t = -Sb / Ac  = -r^2 / y_b  (upper kern, NEGATIVE, above centroid)
+    Z_t = St  (section modulus, top fiber)
+    Z_b = Sb  (section modulus, bottom fiber)
+
+  COMPUTATION:
+  ------------------------------------------------------------------
+    k_b = +St / Ac = +4535.11 / 487.000 = +9.312 in
+
+    k_t = -Sb / Ac = -1701.14 / 487.000 = -3.493 in
+
+  GOVERNING EQUATIONS  (Naaman Table 4.2, Row 2):
+  ------------------------------------------------------------------
+    Line I  : e_o <= k_b + (1/F_i)(M_min - sigma_ti x Z_t)    [UPPER bound]
+    Line II : e_o <= k_t + (1/F_i)(M_min + sigma_ci x Z_b)    [UPPER bound]
+    Line III: e_o >= k_b + [1/(eta x F_i)](M_max - sigma_cs x Z_t)  [LOWER bound]
+    Line IV : e_o >= k_t + [1/(eta x F_i)](M_max + sigma_ts x Z_b)  [LOWER bound]
+
+  FEASIBLE RANGE:
+    e_max = min(Line I,   Line II)    (must be <= both upper bounds)
+    e_min = max(Line III, Line IV)    (must be >= both lower bounds)
+    Feasible if and only if  e_min <= e_max
+
+
+==================================================================
+   PART 5 -- ECCENTRICITY BOUNDS AT EACH SECTION
+==================================================================
+
+  F_i = 100.0 kip  (F_ref -- input total force)
+  F_e = eta x F_i = 0.85 x 100.0 = 85.000 kip
+
+  k_b = +9.312 in  |  k_t = -3.493 in
+  Z_t = 4535.1 in^3  |  Z_b = 1701.1 in^3
+
+----------------------------------------------------------------------
+  SECTION 1 -- x = 0 ft  (0 in)  [Left Support]
+----------------------------------------------------------------------
+  Tendon eccentricity:  e_cg = 7.182 in
+  Moments:
+    M_min = M_i = w_sw x 0 x (768-0) / 2 =     0.00 kip-in  (0.00 kip-ft)
+    M_max = M_T = w_s  x 0 x (768-0) / 2 =     0.00 kip-in  (0.00 kip-ft)
+
+5.1.1  Line I  [UPPER] : e_I  = +9.312 + (    0.00 - (-0.2078) x 4535.1) / 100.0 = 18.738 in
+5.1.2  Line II [UPPER] : e_II = -3.493 + (    0.00 + (+2.8800) x 1701.1) / 100.0 = 45.500 in
+5.1.3  Line III[LOWER] : e_III= +9.312 + (    0.00 - (+3.6000) x 4535.1) / 85.000 = -182.763 in
+5.1.4  Line IV [LOWER] : e_IV = -3.493 + (    0.00 + (-0.4648) x 1701.1) / 85.000 = -12.795 in
+
+  GOVERNING BOUNDS -- Section 1:
+  ------------------------------------------------------------------
+    UPPER: e_max = min(18.738, 45.500) = 18.738 in  [Line I governs]
+    LOWER: e_min = max(-182.763, -12.795) = -12.795 in  [Line IV governs]
+    Physical limit: e_cover = yb - cover = 20.362 - 2.0 = 18.362 in
+
+    Feasible range:  -12.795 in  <=  e_o  <=  18.738 in  (width = 31.533 in)
+    Tendon CG:       e_cg = 7.182 in
+    Check:           -12.795 <= 7.182 <= 18.738   -->  PASS
+
+----------------------------------------------------------------------
+  SECTION 2 -- x = 10 ft  (120 in)  []
+----------------------------------------------------------------------
+  Tendon eccentricity:  e_cg = 10.772 in
+  Moments:
+    M_min = M_i = w_sw x 120 x (768-120) / 2 =  1643.62 kip-in  (136.97 kip-ft)
+    M_max = M_T = w_s  x 120 x (768-120) / 2 =  9257.62 kip-in  (771.47 kip-ft)
+
+5.2.1  Line I  [UPPER] : e_I  = +9.312 + ( 1643.62 - (-0.2078) x 4535.1) / 100.0 = 35.175 in
+5.2.2  Line II [UPPER] : e_II = -3.493 + ( 1643.62 + (+2.8800) x 1701.1) / 100.0 = 61.936 in
+5.2.3  Line III[LOWER] : e_III= +9.312 + ( 9257.62 - (+3.6000) x 4535.1) / 85.000 = -73.850 in
+5.2.4  Line IV [LOWER] : e_IV = -3.493 + ( 9257.62 + (-0.4648) x 1701.1) / 85.000 = 96.119 in
+
+  GOVERNING BOUNDS -- Section 2:
+  ------------------------------------------------------------------
+    UPPER: e_max = min(35.175, 61.936) = 35.175 in  [Line I governs]
+    LOWER: e_min = max(-73.850, 96.119) = 96.119 in  [Line IV governs]
+    Physical limit: e_cover = yb - cover = 20.362 - 2.0 = 18.362 in
+
+    Feasible range:  NO ZONE  (e_min = 96.119 > e_max = 35.175)
+    Tendon CG:       e_cg = 10.772 in
+    Check:           10.772 not in [96.119, 35.175]   -->  INFEASIBLE  [no zone]
+
+----------------------------------------------------------------------
+  SECTION 3 -- x = 20 ft  (240 in)  [Drape Point]
+----------------------------------------------------------------------
+  Tendon eccentricity:  e_cg = 14.362 in
+  Moments:
+    M_min = M_i = w_sw x 240 x (768-240) / 2 =  2678.50 kip-in  (223.21 kip-ft)
+    M_max = M_T = w_s  x 240 x (768-240) / 2 = 15086.50 kip-in  (1257.21 kip-ft)
+
+5.3.1  Line I  [UPPER] : e_I  = +9.312 + ( 2678.50 - (-0.2078) x 4535.1) / 100.0 = 45.523 in
+5.3.2  Line II [UPPER] : e_II = -3.493 + ( 2678.50 + (+2.8800) x 1701.1) / 100.0 = 72.285 in
+5.3.3  Line III[LOWER] : e_III= +9.312 + (15086.50 - (+3.6000) x 4535.1) / 85.000 = -5.275 in
+5.3.4  Line IV [LOWER] : e_IV = -3.493 + (15086.50 + (-0.4648) x 1701.1) / 85.000 = 164.694 in
+
+  GOVERNING BOUNDS -- Section 3:
+  ------------------------------------------------------------------
+    UPPER: e_max = min(45.523, 72.285) = 45.523 in  [Line I governs]
+    LOWER: e_min = max(-5.275, 164.694) = 164.694 in  [Line IV governs]
+    Physical limit: e_cover = yb - cover = 20.362 - 2.0 = 18.362 in
+
+    Feasible range:  NO ZONE  (e_min = 164.694 > e_max = 45.523)
+    Tendon CG:       e_cg = 14.362 in
+    Check:           14.362 not in [164.694, 45.523]   -->  INFEASIBLE  [no zone]
+
+----------------------------------------------------------------------
+  SECTION 4 -- x = 32 ft  (384 in)  [Midspan]
+----------------------------------------------------------------------
+  Tendon eccentricity:  e_cg = 14.362 in
+  Moments:
+    M_min = M_i = w_sw x 384 x (768-384) / 2 =  3116.80 kip-in  (259.73 kip-ft)
+    M_max = M_T = w_s  x 384 x (768-384) / 2 = 17555.20 kip-in  (1462.93 kip-ft)
+
+5.4.1  Line I  [UPPER] : e_I  = +9.312 + ( 3116.80 - (-0.2078) x 4535.1) / 100.0 = 49.906 in
+5.4.2  Line II [UPPER] : e_II = -3.493 + ( 3116.80 + (+2.8800) x 1701.1) / 100.0 = 76.668 in
+5.4.3  Line III[LOWER] : e_III= +9.312 + (17555.20 - (+3.6000) x 4535.1) / 85.000 = 23.769 in
+5.4.4  Line IV [LOWER] : e_IV = -3.493 + (17555.20 + (-0.4648) x 1701.1) / 85.000 = 193.737 in
+
+  GOVERNING BOUNDS -- Section 4:
+  ------------------------------------------------------------------
+    UPPER: e_max = min(49.906, 76.668) = 49.906 in  [Line I governs]
+    LOWER: e_min = max(23.769, 193.737) = 193.737 in  [Line IV governs]
+    Physical limit: e_cover = yb - cover = 20.362 - 2.0 = 18.362 in
+
+    Feasible range:  NO ZONE  (e_min = 193.737 > e_max = 49.906)
+    Tendon CG:       e_cg = 14.362 in
+    Check:           14.362 not in [193.737, 49.906]   -->  INFEASIBLE  [no zone]
+
+==================================================================
+   PART 6 -- TENDON ECCENTRICITY PROFILE SUMMARY
+==================================================================
+
+  F_ref = 100.0 kip  |  eta = 0.85  |  F_e = 85.000 kip
+
+  Sec  x(ft)  e_cg    e_min   e_max   Gov Lines  Status
+  ---  -----  ------  ------  ------  ---------  ------
+   1      0    7.182  -12.795   18.738  LI/LIV  PASS
+   2     10   10.772   96.119   35.175  LI/LIV  INFEASIBLE [no zone]
+   3     20   14.362  164.694   45.523  LI/LIV  INFEASIBLE [no zone]
+   4     32   14.362  193.737   49.906  LI/LIV  INFEASIBLE [no zone]
+
+  NOTE: "INFEASIBLE [no zone]" means the 4 Magnel lines do not
+  overlap at this section -- no eccentricity satisfies all 4 conditions.
+
+==================================================================
+   PART 7 -- STRESS VERIFICATION  (F_i = 100.0 kip, F_e = 85.000 kip)
+==================================================================
+
+  SIGN CONVENTION: Compression = positive (+),  Tension = negative (-)
+
+  Stress equations:
+    At Transfer (F_i, eta = 1.0):
+      f_top = +F_i/Ac - F_i*e/St + M_i/St
+      f_bot = +F_i/Ac + F_i*e/Sb - M_i/Sb
+
+    At Service (F_e = eta*F_i, MT):
+      f_top = +F_e/Ac - F_e*e/St + M_T/St
+      f_bot = +F_e/Ac + F_e*e/Sb - M_T/Sb
+
+7.1  Section 1 -- x = 0 ft  (0 in)  [Left Support]
+------------------------------------------------------------------
+  M_i = 0.0 kip-in  |  M_T = 0.0 kip-in  |  e_cg = 7.182 in
+
+  Transfer -- Bottom Fiber:
+    f_bot = +100.0/487.000 + 100.0*7.182/1701.14 - 0.0/1701.14
+          = +0.2053     + 0.4222         - 0.0000
+          = +0.628 ksi
+    Limit: sigma_ci = +2.880 ksi  -->  PASS  (D/C = 0.218)
+
+  Transfer -- Top Fiber:
+    f_top = +100.0/487.000 - 100.0*7.182/4535.11 + 0.0/4535.11
+          = +0.2053     - 0.1584         + 0.0000
+          = +0.047 ksi
+    Limit: sigma_ti = -0.2078 ksi  -->  PASS
+
+  Service -- Bottom Fiber:
+    f_bot = +85.000/487.000 + 85.000*7.182/1701.14 - 0.0/1701.14
+          = +0.1745     + 0.3589         - 0.0000
+          = +0.533 ksi
+    Limit: sigma_ts = -0.4648 ksi  -->  PASS  (D/C = -1.148)
+
+  Service -- Top Fiber:
+    f_top = +85.000/487.000 - 85.000*7.182/4535.11 + 0.0/4535.11
+          = +0.1745     - 0.1346         + 0.0000
+          = +0.040 ksi
+    Limit: sigma_cs = +3.600 ksi  -->  PASS  (D/C = 0.011)
+
+7.2  Section 2 -- x = 10 ft  (120 in)  []
+------------------------------------------------------------------
+  M_i = 1643.6 kip-in  |  M_T = 9257.6 kip-in  |  e_cg = 10.772 in
+
+  Transfer -- Bottom Fiber:
+    f_bot = +100.0/487.000 + 100.0*10.772/1701.14 - 1643.6/1701.14
+          = +0.2053     + 0.6332         - 0.9662
+          = -0.128 ksi
+    Limit: sigma_ci = +2.880 ksi  -->  PASS  (D/C = -0.044)
+
+  Transfer -- Top Fiber:
+    f_top = +100.0/487.000 - 100.0*10.772/4535.11 + 1643.6/4535.11
+          = +0.2053     - 0.2375         + 0.3624
+          = +0.330 ksi
+    Limit: sigma_ti = -0.2078 ksi  -->  PASS
+
+  Service -- Bottom Fiber:
+    f_bot = +85.000/487.000 + 85.000*10.772/1701.14 - 9257.6/1701.14
+          = +0.1745     + 0.5382         - 5.4420
+          = -4.729 ksi
+    Limit: sigma_ts = -0.4648 ksi  -->  FAIL  (-4.729 < -0.4648, over by 4.264 ksi)
+
+  Service -- Top Fiber:
+    f_top = +85.000/487.000 - 85.000*10.772/4535.11 + 9257.6/4535.11
+          = +0.1745     - 0.2019         + 2.0413
+          = +2.014 ksi
+    Limit: sigma_cs = +3.600 ksi  -->  PASS  (D/C = 0.559)
+
+7.3  Section 3 -- x = 20 ft  (240 in)  [Drape Point]
+------------------------------------------------------------------
+  M_i = 2678.5 kip-in  |  M_T = 15086.5 kip-in  |  e_cg = 14.362 in
+
+  Transfer -- Bottom Fiber:
+    f_bot = +100.0/487.000 + 100.0*14.362/1701.14 - 2678.5/1701.14
+          = +0.2053     + 0.8443         - 1.5745
+          = -0.525 ksi
+    Limit: sigma_ci = +2.880 ksi  -->  PASS  (D/C = -0.182)
+
+  Transfer -- Top Fiber:
+    f_top = +100.0/487.000 - 100.0*14.362/4535.11 + 2678.5/4535.11
+          = +0.2053     - 0.3167         + 0.5906
+          = +0.479 ksi
+    Limit: sigma_ti = -0.2078 ksi  -->  PASS
+
+  Service -- Bottom Fiber:
+    f_bot = +85.000/487.000 + 85.000*14.362/1701.14 - 15086.5/1701.14
+          = +0.1745     + 0.7176         - 8.8684
+          = -7.976 ksi
+    Limit: sigma_ts = -0.4648 ksi  -->  FAIL  (-7.976 < -0.4648, over by 7.512 ksi)
+
+  Service -- Top Fiber:
+    f_top = +85.000/487.000 - 85.000*14.362/4535.11 + 15086.5/4535.11
+          = +0.1745     - 0.2692         + 3.3266
+          = +3.232 ksi
+    Limit: sigma_cs = +3.600 ksi  -->  PASS  (D/C = 0.898)
+
+7.4  Section 4 -- x = 32 ft  (384 in)  [Midspan]
+------------------------------------------------------------------
+  M_i = 3116.8 kip-in  |  M_T = 17555.2 kip-in  |  e_cg = 14.362 in
+
+  Transfer -- Bottom Fiber:
+    f_bot = +100.0/487.000 + 100.0*14.362/1701.14 - 3116.8/1701.14
+          = +0.2053     + 0.8443         - 1.8322
+          = -0.783 ksi
+    Limit: sigma_ci = +2.880 ksi  -->  PASS  (D/C = -0.272)
+
+  Transfer -- Top Fiber:
+    f_top = +100.0/487.000 - 100.0*14.362/4535.11 + 3116.8/4535.11
+          = +0.2053     - 0.3167         + 0.6873
+          = +0.576 ksi
+    Limit: sigma_ti = -0.2078 ksi  -->  PASS
+
+  Service -- Bottom Fiber:
+    f_bot = +85.000/487.000 + 85.000*14.362/1701.14 - 17555.2/1701.14
+          = +0.1745     + 0.7176         - 10.3196
+          = -9.427 ksi
+    Limit: sigma_ts = -0.4648 ksi  -->  FAIL  (-9.427 < -0.4648, over by 8.963 ksi)
+
+  Service -- Top Fiber:
+    f_top = +85.000/487.000 - 85.000*14.362/4535.11 + 17555.2/4535.11
+          = +0.1745     - 0.2692         + 3.8710
+          = +3.776 ksi
+    Limit: sigma_cs = +3.600 ksi  -->  FAIL  (+3.776 > +3.600, over by 0.176 ksi)
+
+==================================================================
+   Generated by feasibility4Sections.m
+   Case: Case2_HighLoad_Infeasible
+   CEE 530 Prestressed Concrete, ASU Spring 2026
+==================================================================

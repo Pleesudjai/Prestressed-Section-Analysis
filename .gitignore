@@ -1,0 +1,16 @@
+# Large source PDFs
+01_sources/
+
+# Temp files
+.codex_tmp_*
+~$*
+
+# Node modules
+node_modules/
+
+# Bullet journal (separate system)
+09_bullet_journal_system/
+
+# Unpacked Word doc internals
+unpacked_*/
+verify_*/

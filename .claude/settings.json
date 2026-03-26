@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find 'c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project4 Ultimate' -type f -name *.m)",
+      "Bash(mkdir -p ~/.claude/skills/wisc-setup)",
+      "Bash(unzip -o \"C:\\\\Users\\\\chidc\\\\ASU Dropbox\\\\Mobasher_Group\\\\SMC Labs\\\\04_knowledge\\\\05_claude_skills\\\\tooling\\\\wisc-setup.skill\")",
+      "Bash(mkdir -p \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/.claude/commands\")",
+      "Bash(mkdir -p \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/.claude/rules\")",
+      "Bash(mkdir -p \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/.claude/docs\")",
+      "Bash(pandoc --track-changes=all \"C:\\\\Users\\\\chidc\\\\ASU Dropbox\\\\Chidchanok Pleesudjai\\\\PhD COURSES\\\\2026 Spring\\\\CEE 530 Prestressed Concrete\\\\Prestressed-Section-Analysis\\\\08_matlab_program_analysis\\\\project_Project2\\\\ShearDesign_Report.docx\" -o \"C:\\\\Users\\\\chidc\\\\ASU Dropbox\\\\Chidchanok Pleesudjai\\\\PhD COURSES\\\\2026 Spring\\\\CEE 530 Prestressed Concrete\\\\Prestressed-Section-Analysis\\\\08_matlab_program_analysis\\\\project_Project2\\\\ShearDesign_Report.md\" --wrap=none)",
+      "Bash(where python:*)",
+      "Bash(ls /c/Users/chidc/AppData/Roaming/uv/python/*/python.exe)",
+      "Bash(ls /c/Python*/python.exe)",
+      "Bash(echo $PATH)",
+      "Edit(/.claude/skills/prime/**)",
+      "Edit(/.claude/skills/plan-feature/**)",
+      "Edit(/.claude/skills/execute/**)",
+      "Edit(/.claude/skills/handoff/**)",
+      "Edit(/.claude/skills/commit/**)",
+      "Bash(matlab -batch \"shearDesign\")",
+      "Bash(/c/Users/chidc/AppData/Local/Programs/Python/Python313/python \"C:/Users/chidc/.claude/skills/docx/scripts/office/unpack.py\" \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project2/ShearDesign_Report.docx\" \"c:/temp/shear_report_v2/\")",
+      "Bash(/c/Users/chidc/AppData/Local/Programs/Python/Python313/python c:/temp/update_shear_report.py)",
+      "Bash(/c/Users/chidc/AppData/Local/Programs/Python/Python313/python \"C:/Users/chidc/.claude/skills/docx/scripts/office/pack.py\" \"c:/temp/shear_report_v2/\" \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project2/ShearDesign_Report.docx\" --original \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project2/ShearDesign_Report.docx\")",
+      "Bash(PYTHONUTF8=1 /c/Users/chidc/AppData/Local/Programs/Python/Python313/python \"C:/Users/chidc/.claude/skills/docx/scripts/office/pack.py\" \"c:/temp/shear_report_v2/\" \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project2/ShearDesign_Report.docx\" --original \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project2/ShearDesign_Report.docx\")",
+      "Bash(PYTHONUTF8=1 /c/Users/chidc/AppData/Local/Programs/Python/Python313/python \"C:/Users/chidc/.claude/skills/docx/scripts/office/unpack.py\" \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project2/ShearDesign_Report.docx\" \"c:/temp/shear_report_v3/\")",
+      "Bash(PYTHONUTF8=1 /c/Users/chidc/AppData/Local/Programs/Python/Python313/python \"C:/Users/chidc/.claude/skills/docx/scripts/office/pack.py\" \"c:/temp/shear_report_v3/\" \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project2/ShearDesign_Report.docx\" --original \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project2/ShearDesign_Report.docx\")",
+      "Bash(PYTHONUTF8=1 /c/Users/chidc/AppData/Local/Programs/Python/Python313/python \"C:/Users/chidc/.claude/skills/docx/scripts/office/unpack.py\" \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project2/ShearDesign_Report.docx\" \"c:/temp/shear_report_v4/\")",
+      "Bash(npm list:*)",
+      "Bash(node gen_shear_report.js)",
+      "Bash(PYTHONUTF8=1 /c/Users/chidc/AppData/Local/Programs/Python/Python313/python scripts/office/validate.py \"/c/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project2/ShearDesign_Report.docx\")",
+      "Bash(PYTHONUTF8=1 /c/Users/chidc/AppData/Local/Programs/Python/Python313/python \"/c/Users/chidc/.claude/skills/docx/scripts/office/unpack.py\" \"/c/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/project_Project2/ShearDesign_Report.docx\" /c/temp/shear_report_check/)",
+      "Bash(PYTHONUTF8=1 /c/Users/chidc/AppData/Local/Programs/Python/Python313/python -c \":*)",
+      "Bash(ls \"c:/Users/chidc/ASU Dropbox/Chidchanok Pleesudjai/PhD COURSES/2026 Spring/CEE 530 Prestressed Concrete/Prestressed-Section-Analysis/08_matlab_program_analysis/\"*.m)",
+      "Bash(node create_shear_report_v2.js)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\chidc\\ASU Dropbox\\Mobasher_Group\\Students\\Fen_PhD\\00_bullet_journal_system\\03_logs\\daily"
+    ]
+  }
+}

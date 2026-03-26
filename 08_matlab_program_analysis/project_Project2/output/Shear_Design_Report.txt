@@ -1,0 +1,640 @@
+==================================================================
+   CEE 530 PRESTRESSED CONCRETE  --  PROJECT 2
+   Shear Design of Prestressed Double-T Beam
+   ACI 318-19  /  Naaman Section 5.7  --  Empirical Method (Vci / Vcw)
+==================================================================
+   Student      : Chidchanok Pleesudjai (Fen)
+   Date         : 2026-03-18
+   Code edition : CEE530  (ACI 318-19 shear provisions)
+   Source       : shearDesign.m + inputData.m  (Project 2, project_Project2/)
+==================================================================
+
+  SIGN CONVENTION:  Compression = positive (+)   Tension = negative (-)
+  UNIT SYSTEM:      kip, in  (moments in kip-in, stresses in ksi)
+  METHOD:           Detailed method -- Vci / Vcw  (ACI 318-19 Table 22.5.8.2)
+
+==================================================================
+   PART 1 -- GIVEN DATA
+==================================================================
+
+1.1  BEAM GEOMETRY
+------------------------------------------------------------------
+  Section type : Double-T (precast, simply supported)
+  Span length  : L = (20 + 24 + 20) ft x 12 in/ft  =  768 in  (64.00 ft)
+  Total depth  : h = 28.00 in
+  Support type : Simply supported at x = 0 and x = 768 in
+
+1.2  CROSS-SECTION  (Double-T, symmetric)
+------------------------------------------------------------------
+  Section origin: y = 0 at BOTTOM of stems, y positive upward.
+
+  Top flange  : 120 in wide  x  2 in thick   (y = 26 to 28 in)
+  Left stem   : x = -32 to -28.25 in          (y = 0 to 26 in)
+  Right stem  : x = +28.25 to +32 in          (y = 0 to 26 in)
+
+  Vertices (counterclockwise):
+    (-60,26), (-33,26), (-32,0), (-28.25,0), (-27.25,26),
+    (27.25,26), (28.25,0), (32,0), (33,26), (60,26), (60,28), (-60,28)
+
+  Section properties (shoelace formula, from MATLAB):
+    A   =  487.000 in^2
+    Ic  =  34638.82 in^4
+    yc  =  20.3621 in   (centroid from bottom)
+    yb  =  20.3621 in   (centroid to bottom fiber)
+    yt  =   7.6379 in   (centroid to top fiber)
+    St  =  Ic/yt  =  34638.82 / 7.6379  =  4535.11 in^3
+    Sb  =  Ic/yb  =  34638.82 / 20.3621 =  1701.14 in^3
+
+  Web width for shear (sum of stem widths at y = 0, from vertices):
+    Left stem   = |-28.25 - (-32)|  =  3.75 in
+    Right stem  = | 32 - 28.25|     =  3.75 in
+
+    bw  =  3.75 + 3.75  =  7.50 in
+
+1.3  MATERIAL PROPERTIES
+------------------------------------------------------------------
+  Concrete:
+    f'c    =  6.0 ksi   (28-day compressive strength)
+    f'ci   =  4.8 ksi   (compressive strength at transfer)
+    Ec     =  4700 ksi
+    lambda =  1.0       (normal-weight concrete, ACI 318-19 Sec. 19.2.4)
+
+  sqrt(f'c_psi):
+    sqrt(6000) / 1000  =  0.07746 ksi   [used throughout shear equations]
+
+  Prestressing steel  (Grade 270, 0.5-in diameter strand):
+    fpu   =  270 ksi
+    fpy   =  243 ksi   (= 0.90 fpu)
+    Eps   =  28500 ksi
+    Aps   =  0.153 in^2  per strand
+
+  Mild steel (stirrups):
+    fy_s  =  60 ksi
+    Es    =  29000 ksi
+
+  Shear reduction factor:
+    phi_v =  0.75       (ACI 318-19 Table 21.2.1)
+
+1.4  PRESTRESSING TENDONS  (4 strands, fully bonded)
+------------------------------------------------------------------
+  Aps_total   =  4 x 0.153  =  0.612 in^2
+  fpi per T   =  Pi/Aps  =  25.0 / 0.153  =  163.4 ksi
+  Pi per T    =  25.0 kips   (initial)
+  Fi_total    =  4 x 25.0  =  100.0 kips   (total initial prestress)
+  Loss factor : eta = 1 - 0.15  =  0.85
+  Pe_total    =  0.85 x 100.0  =  85.0 kips   (effective prestress)
+
+  Tendon layout (y from bottom):
+    Tendon 1 -- left  stem, straight : y =  6.00 in  (constant)
+    Tendon 2 -- left  stem, harped   : y = 20.36 in at supports
+                                        y =  6.00 in from x = 240 to 528 in
+                                        y = 20.36 in at far support
+    Tendon 3 -- right stem, straight : y =  6.00 in  (mirror of T1)
+    Tendon 4 -- right stem, harped   : same profile as Tendon 2
+
+  Resultant PS centroid (force-weighted):
+    At x = 0   (support) : y_ps  =  13.18 in   (T2,T4 at y=20.36)
+    At x = 240 in (drape): y_ps  =   6.00 in   (all at y=6)
+    At x = 384 in (mid)  : y_ps  =   6.00 in
+    e at midspan          =  yc - 6.00  =  20.3621 - 6.00  =  14.362 in
+
+  Vertical PS component (upward, harped tendons only):
+    Vp at support  =  2.538 kips   (slope of T2,T4 at support)
+    Vp at midspan  =  0.000 kips   (tendons flat at midspan)
+
+1.5  APPLIED LOADS  (from MATLAB)
+------------------------------------------------------------------
+  Self-weight   : w_sw  =  Ac * (150/1728) / 1000
+                         =  487.000 * 0.08681 / 1000
+                         =  0.04227 kip/in   (=  0.5073 kip/ft)
+
+  Superimposed Dead Load (2-in topping, 150 pcf):
+    w_SDL = 2 * 120 * (150/1728) / 1000
+          = 0.02083 kip/in   (=  0.2500 kip/ft)
+
+  Live Load:
+    w_LL  = 0.42 kip/ft / 12
+          = 0.03500 kip/in   (=  0.4200 kip/ft)
+
+  Total unfactored dead load:
+    w_DL  = w_sw + w_SDL
+          = 0.04227 + 0.02083
+          = 0.06311 kip/in   (=  0.7573 kip/ft)
+
+  Factored load  (ACI 318-19 Sec. 5.3.1b):
+    wu = 1.2 * w_DL + 1.6 * w_LL
+       = 1.2 * 0.06311 + 1.6 * 0.03500
+       = 0.07573 + 0.05600
+       = 0.13173 kip/in   (=  1.5808 kip/ft)
+
+  Maximum factored shear (at support):
+    Vu_max = wu * L/2  =  0.13173 * 384  =  50.58 kips
+
+  Maximum factored moment (at midspan):
+    Mu_max = wu * L^2/8  =  0.13173 * 768^2 / 8
+           =  9712.13 kip-in   (=  809.34 kip-ft)
+
+==================================================================
+   PART 2 -- CRITICAL SECTION LOCATION  (ACI 318-19 R22.5.3.2)
+==================================================================
+  For prestressed beams, the critical section for shear shall be
+  located at a distance dp from the face of the support.
+  dp shall not be less than 0.80*h.
+
+2.1  Effective Depth  dp
+------------------------------------------------------------------
+  Formula:
+    dp = max(h - y_ps, 0.80 * h)
+
+  At x = 0 (support):
+    y_ps    =  13.18 in
+    h - y_ps =  28.00 - 13.18  =  14.82 in
+    0.80 * h =  0.80 * 28.00  =  22.40 in
+
+    dp  =  max(14.82, 22.40)  =  22.40 in   [0.80h governs]
+
+2.2  Critical Section
+------------------------------------------------------------------
+  x_cr = dp  =  22.40 in from support  (nearest grid: 22.27 in)
+
+  Critical section  (from MATLAB):
+    x_cr  =  22.27 in   =  1.86 ft  from support
+    dp    =  22.40 in   (>= 0.80*h = 22.40 in)  ✓
+
+==================================================================
+   PART 3 -- MODULUS OF RUPTURE FOR SHEAR  fr
+==================================================================
+  Reference: ACI 318-19 Table 22.5.8.2
+  Note: fr for Vci/Mcr uses 6*lambda*sqrt(f'c_psi), NOT 7.5*lambda*sqrt.
+
+  Formula:
+    fr = 6 * lambda * sqrt(f'c_psi) / 1000   [result in ksi]
+
+  Substitution:
+    fr = 6 * 1.0 * sqrt(6000) / 1000
+       = 6 * 1.0 * 77.460 / 1000
+
+    fr  =  0.4648 ksi
+
+==================================================================
+   PART 4 -- PRESTRESS STRESS AT BOTTOM FIBER  fce
+==================================================================
+  fce = compressive stress at bottom fiber due to effective prestress
+        alone (no applied loads).  Positive = compression.
+
+  Formula:
+    fce = Pe/Ac  +  Pe * e * yb / Ic
+
+  Values at critical section  (x = 22.27 in):
+    Pe  =  85.00 kips
+    Ac  =  487.000 in^2
+    Ic  =  34638.82 in^4
+    yb  =  20.3621 in
+
+    Tendon resultant y_ps at x = 22.27 in:
+      T1,T3 (straight): y  =  6.00 in   (constant)
+      T2,T4 (sloping) : y  =  20.36 + (6.00-20.36)*(22.27/240)
+                           =  20.36 - 14.36 * 0.09279
+                           =  20.36 - 1.333  =  19.03 in
+      y_ps = (6.00 + 19.03 + 6.00 + 19.03) / 4  =  12.515 in
+      e    =  yc - y_ps  =  20.3621 - 12.515  =  7.847 in  (+ = below centroid)
+
+  Substitution:
+    fce = 85.00/487.000  +  85.00 * 7.847 * 20.3621 / 34638.82
+
+        = 0.1745           +  13579.8 / 34638.82
+
+        = 0.1745           +  0.3922
+
+    fce  =  0.5667 ksi   (compression, +)   [confirmed by MATLAB: 0.5667 ksi]
+
+==================================================================
+   PART 5 -- DEAD LOAD STRESS AT BOTTOM FIBER  fd
+==================================================================
+  fd = flexural tensile stress at bottom fiber due to unfactored DL.
+       Used as a reduction in Mcr (DL partially pre-opens the crack).
+
+  Formula:
+    Md  =  w_DL * x * (L - x) / 2        [simply supported]
+    fd  =  Md * yb / Ic                   [positive = tensile magnitude]
+
+  At critical section  (x = 22.27 in):
+    Md = 0.06311 * 22.27 * (768 - 22.27) / 2
+       = 0.06311 * 22.27 * 745.73 / 2
+       = 0.06311 * 8302.4 / 2
+       = 0.06311 * 4151.2
+       = 524.07 kip-in
+
+    fd = 524.07 * 20.3621 / 34638.82
+       = 10671.2 / 34638.82
+
+    fd  =  0.3081 ksi   (tensile magnitude)   [MATLAB: 0.3081 ksi]
+
+==================================================================
+   PART 6 -- CRACKING MOMENT  Mcr
+==================================================================
+  Mcr = moment at which the bottom fiber tensile stress reaches the
+        modulus of rupture, accounting for prestress and dead load.
+
+  Reference: ACI 318-19 Eq. (22.5.8.3.2a)   [Naaman Eq. 5-31]
+
+  Formula:
+    Mcr = (Ic / yb) * (fr  +  fce  -  fd)
+
+  Physical interpretation:
+    fr  = tensile cracking capacity of concrete
+    fce = precompression at bottom fiber  (delays cracking)
+    fd  = DL tensile stress at bottom     (promotes cracking)
+
+  At critical section  (x = 22.27 in):
+    Ic/yb  =  34638.82 / 20.3621  =  1701.14 in^3   (= Sb)
+    fr  +  fce  -  fd  =  0.4648 + 0.5667 - 0.3081  =  0.7234 ksi
+
+  Substitution:
+    Mcr = 1701.14 * 0.7234
+
+    Mcr  =  1230.57 kip-in   =  102.55 kip-ft   [MATLAB: 1230.57 kip-in]
+
+  Note at MIDSPAN (x = 384 in):
+    fce_mid =  0.8922 ksi,  fd_mid =  2.7351 ksi
+    fr + fce_mid =  0.4648 + 0.8922  =  1.357 ksi
+    fd_mid = 2.7351 ksi  >  1.357 ksi   -->  Mcr_mid < 0  (set Mcr = 0)
+    At midspan: DL tension exceeds prestress+rupture -- Vci_min governs.
+
+==================================================================
+   PART 7 -- FLEXURAL-SHEAR STRENGTH  Vci
+==================================================================
+  Vci applies when an existing flexural crack turns into a shear crack.
+  Governs in regions of high moment (mid-span zone).
+
+  Reference: ACI 318-19 Eq. (22.5.8.3.1a)   [Naaman Sec. 5.7.2]
+
+  Formula:
+    Vci = 0.6*lambda*sqrt(f'c)*bw*dp  +  Vd  +  (Vi/Mmax)*Mcr
+
+    Lower bound:
+    Vci >= Vci_min = 1.7*lambda*sqrt(f'c)*bw*dp
+
+  Define load terms:
+    Vi   = factored shear from external loads (SDL + LL) only (excludes SW)
+           Per Naaman / class notes: w_ext = 1.2*w_SDL + 1.6*w_LL
+    Mmax = factored moment from same external loads
+    Vd   = unfactored DL shear (SW + SDL)
+
+  Compute load terms at critical section  (x = 22.27 in):
+    w_ext = 1.2 * 0.02083 + 1.6 * 0.03500
+          = 0.02500 + 0.05600
+          = 0.08100 kip/in
+
+    Vi   = w_ext * (L/2 - x)
+         = 0.08100 * (384.00 - 22.27)
+         = 0.08100 * 361.73
+         = 29.300 kips
+
+    Mmax = w_ext * x * (L - x) / 2
+         = 0.08100 * 22.27 * 745.73 / 2
+         = 0.08100 * 8302.4 / 2
+         = 0.08100 * 4151.2
+         = 672.25 kip-in
+
+    Vd   = w_DL * (L/2 - x)
+         = 0.06311 * (384.00 - 22.27)
+         = 0.06311 * 361.73
+         = 22.828 kips
+
+  Three-term Vci calculation  (from MATLAB):
+    Term 1:  0.6 * lambda * sqrt(f'c) * bw * dp
+           = 0.6 * 1.0 * 0.07746 * 7.50 * 22.40
+           =  7.808 kips
+
+    Term 2:  Vd
+           = 22.828 kips
+
+    Term 3:  (Vi / Mmax) * Mcr
+           = (29.300 / 672.25) * 1230.57
+           = 0.04358 * 1230.57
+           = 53.602 kips
+
+    Vci (sum)   =  7.808 + 22.828 + 53.602  =  84.238 kips
+
+  Lower bound:
+    Vci_min = 1.7 * 1.0 * 0.07746 * 7.50 * 22.40
+            = 1.7 * 13.014
+            = 22.122 kips
+
+    84.238 kips  >=  22.122 kips   -->  Vci = 84.238 kips governs
+
+==================================================================
+   PART 8 -- WEB-SHEAR STRENGTH  Vcw
+==================================================================
+  Vcw applies when diagonal cracking initiates at the neutral axis
+  without prior flexural cracking.  Governs near supports.
+
+  Reference: ACI 318-19 Eq. (22.5.8.3.2)   [Naaman Sec. 5.7.3]
+
+  Formula:
+    Vcw = (3.5*lambda*sqrt(f'c)  +  0.3*fpc) * bw * dp  +  Vp
+
+8.1  Centroidal Prestress Stress  fpc
+------------------------------------------------------------------
+  fpc = Pe / Ac                (centroid in web: yc = 20.36" < 26" flange soffit)
+
+    fpc = 85.00 / 487.000
+
+    fpc  =  0.1745 ksi   (compression, +)   [MATLAB: 0.1745 ksi]
+
+8.2  Vertical Prestress Component  Vp  (harped tendons)
+------------------------------------------------------------------
+  At x = 22.27 in (on sloped region, 0 < x < 240 in):
+
+    Slope of T2 and T4:
+      dy/dx  = (6.00 - 20.36) / (240 - 0)
+             = -14.36 / 240
+             = -0.05983 in/in   (negative = sloping downward)
+
+    theta  = atan(0.05983)  =  0.05975 rad
+
+    sin(theta)  =  0.05972
+
+    Pe per harped tendon:
+      Pe_T2  = Aps * fpi * eta  =  0.153 * 163.4 * 0.85  =  21.25 kips
+
+    Vp = 2 (tendons) * Pe_T2 * sin(theta)
+       = 2 * 21.25 * 0.05972
+
+    Vp  =  2.538 kips   (upward)   [MATLAB: 2.538 kips]
+
+8.3  Vcw Calculation
+------------------------------------------------------------------
+  Concrete term:
+    (3.5 * 1.0 * 0.07746 + 0.3 * 0.1745) * 7.50 * 22.40
+    = (0.27111 + 0.05235) * 168.00
+    = 0.32346 * 168.00
+    = 54.343 kips
+
+  Total:
+    Vcw = 54.343 + 2.538
+
+    Vcw  =  56.881 kips   [MATLAB: 56.88 kips]
+
+==================================================================
+   PART 9 -- CONCRETE SHEAR CAPACITY  Vc
+==================================================================
+  Reference: ACI 318-19 Section 22.5.8.3
+
+  Vc  =  min(Vci, Vcw)
+      =  min(84.238, 56.881)
+
+  Vc  =  56.881 kips   [Vcw GOVERNS at critical section]
+
+  Design concrete capacity:
+    phi * Vc  =  0.75 * 56.881  =  42.661 kips
+
+==================================================================
+   PART 10 -- SHEAR DEMAND vs. CAPACITY AT CRITICAL SECTION
+==================================================================
+
+  Vu at critical section  (x = 22.27 in):
+    Vu = wu * (L/2 - x)
+       = 0.13173 * (384.00 - 22.27)
+       = 0.13173 * 361.73
+
+    Vu  =  47.650 kips   [MATLAB: 47.650 kips]
+
+  Code check  (ACI 318-19 Sec. 22.5.1.1):
+    Vu = 47.650 kips  >  phi*Vc = 42.661 kips
+
+    STATUS:  Shear reinforcement REQUIRED
+
+==================================================================
+   PART 11 -- REQUIRED STIRRUP CONTRIBUTION  Vs
+==================================================================
+  Formula:
+    Vs_req = max(Vu/phi_v  -  Vc,  0)
+
+  Substitution:
+    Vs_req = max(47.650/0.75  -  56.881,  0)
+           = max(63.533  -  56.881,  0)
+           = max(6.652,  0)
+
+    Vs_req  =  6.652 kips   [MATLAB: 6.652 kips]
+
+  Maximum Vs check  (ACI 318-19 Sec. 22.5.1.2):
+    Vs_max = 8 * lambda * sqrt(f'c) * bw * dp
+           = 8 * 1.0 * 0.07746 * 7.50 * 22.40
+           = 8 * 13.014
+           = 104.11 kips
+
+    Vs_req = 6.652 kips  <=  Vs_max = 104.11 kips   -->  PASS (section adequate)
+
+==================================================================
+   PART 12 -- STIRRUP DESIGN AT CRITICAL SECTION
+==================================================================
+  Selected bar:  #3 closed U-stirrups (2 legs)
+    Av  =  2 * 0.11  =  0.22 in^2
+    fy_s = 60 ksi
+
+12.1  Av/s from Demand  (ACI 318-19 Eq. 22.5.10.5.3)
+------------------------------------------------------------------
+  Formula (vertical stirrups, alpha_s = 90 deg):
+    Av/s_demand = Vs_req / (fy_s * dp)
+
+  Substitution:
+    Av/s_demand = 6.652 / (60 * 22.40)
+               = 6.652 / 1344.0
+
+    Av/s_demand  =  0.00495 in^2/in   [MATLAB: 0.00495]
+
+12.2  Minimum Av/s  (ACI 318-19 Table 9.6.3.3 -- Prestressed Member)
+------------------------------------------------------------------
+  Three criteria must all be evaluated; largest shall govern.
+
+  Criterion 1  (ACI Eq. 9.6.3.3a):
+    Formula:   Av/s_min1 = 0.75 * sqrt(f'c_psi) * bw / fy_s
+
+    Av/s_min1 = 0.75 * 0.07746 * 7.50 / 60.0
+              = 0.75 * 0.07746 * 0.12500
+
+    Av/s_min1  =  0.00726 in^2/in
+
+  Criterion 2  (ACI Eq. 9.6.3.3b):
+    Formula:   Av/s_min2 = (50 psi / 1000) * bw / fy_s
+
+    Av/s_min2 = 0.05000 * 7.50 / 60.0
+              = 0.05000 * 0.12500
+
+    Av/s_min2  =  0.00625 in^2/in
+
+  Criterion 3  (ACI Eq. 9.6.3.3c):
+    Formula:   Av/s_min3 = (Aps * fpu) / (80 * fy_s * dp) * sqrt(dp / bw)
+
+    Av/s_min3 = (0.6120 * 270) / (80 * 60 * 22.40) * sqrt(22.40 / 7.50)
+              = 165.24 / 107520 * sqrt(2.9867)
+              = 0.001537 * 1.7283
+
+    Av/s_min3  =  0.00266 in^2/in
+
+  Governing minimum  (ACI 318-19):
+    Av/s_min = max(0.00726, 0.00625, 0.00266)
+
+    Av/s_min  =  0.00726 in^2/in   [Criterion 1 governs]   [MATLAB: 0.00726]
+
+12.3  Governing Av/s at Critical Section
+------------------------------------------------------------------
+  Av/s_governing = max(Av/s_demand, Av/s_min)
+                 = max(0.00495, 0.00726)
+
+  Av/s_governing  =  0.00726 in^2/in   [minimum reinforcement governs]
+
+12.4  Required Stirrup Spacing
+------------------------------------------------------------------
+  Formula:
+    s_req = Av / (Av/s_governing)
+          = 0.22 / 0.00726
+
+    s_req  =  30.30 in   (before spacing limits)
+
+12.5  Spacing Limits  (ACI 318-19 Sec. 9.7.6.2.2)
+------------------------------------------------------------------
+  Basic limit  (when Vs <= 4*lambda*sqrt(f'c)*bw*dp):
+    s_max = min(3*h/4, 24 in)
+          = min(3*28/4, 24)
+          = min(21.0, 24)
+          = 21.0 in
+
+  Tight limit trigger check  (when Vs > 4*lambda*sqrt(f'c)*bw*dp):
+    Vs_threshold = 4 * 0.07746 * 7.50 * 22.40  =  52.06 kips
+    Vs_req = 6.652 kips  <=  52.06 kips  -->  basic limit applies
+
+    s_max  =  21.0 in   [basic limit]
+
+12.6  Design Spacing
+------------------------------------------------------------------
+  s_design = min(s_req, s_max)
+           = min(30.30, 21.0)
+
+  s_design  =  21 in   [spacing limit governs]   [MATLAB: 21"]
+
+  Verify capacity:
+    Vs_provided = Av * fy_s * dp / s_design
+                = 0.22 * 60 * 22.40 / 21
+                = 295.68 / 21
+                = 14.08 kips
+
+    phi*(Vc + Vs) = 0.75 * (56.881 + 14.08)
+                  = 0.75 * 70.961
+                  = 53.22 kips  >=  Vu = 47.65 kips   -->  PASS
+
+==================================================================
+   PART 13 -- SHEAR DESIGN ALONG THE SPAN  (Full Summary Table)
+==================================================================
+  Values computed by MATLAB (shearDesign.m) at 13 equally spaced points.
+  bw = 7.50 in,  dp = 22.40 in (0.8h governs throughout),  phi_v = 0.75
+  #3 U-stirrups  Av = 0.22 in^2,  fy_s = 60 ksi
+
+  NOTE: Vci shown as >999 near supports (Mmax --> 0), Vcw governs there.
+
+  x (ft)  Vu(k)   Vci(k)  Vcw(k)  Vc(k)  phi*Vc  Vs_req  Av/s(in2/in)  s_des"
+  -------------------------------------------------------------------------------
+   0.0    50.58   >999    56.88   56.88   42.66   10.56   0.00786       21
+   5.3    42.19   34.35   56.88   34.35   25.76   21.90   0.01630       13  *
+  10.7    33.69   23.95   56.88   23.95   17.96   20.97   0.01560       14  *
+  16.0    25.29   22.12   56.88   22.12   16.59   11.60   0.00863       21
+  21.3    16.90   22.12   54.34   22.12   16.59    0.40   0.00726       21
+  26.7     8.40   22.12   54.34   22.12   16.59    0.00   0.00726       21
+  32.0     0.00   22.12   54.34   22.12   16.59    0.00   0.00726       21
+  37.3     8.40   22.12   54.34   22.12   16.59    0.00   0.00726       21
+  42.7    16.90   22.12   54.34   22.12   16.59    0.40   0.00726       21
+  48.0    25.29   22.12   56.88   22.12   16.59   11.60   0.00863       21
+  53.3    33.69   23.95   56.88   23.95   17.96   20.97   0.01560       14  *
+  58.7    42.19   34.35   56.88   34.35   25.76   21.90   0.01630       13  *
+  64.0    50.58   >999    56.88   56.88   42.66   10.56   0.00786       21
+  -------------------------------------------------------------------------------
+  (*) = Vci governs (Vci < Vcw); closer stirrup spacing needed here.
+
+  Key observation:
+    At x = 5.3 ft and 58.7 ft:  Vci drops below Vcw, s_design = 13 in.
+    This is the most critical stirrup zone -- NOT the code critical
+    section (x = 1.86 ft), where Vcw still governs.
+
+==================================================================
+   PART 14 -- MIDSPAN CHECK
+==================================================================
+  At midspan  (x = 384 in = 32.0 ft):
+    dp    =  22.40 in   (0.8h governs)
+    Vu    =  0.00 kips   (Vu = wu*(L/2-L/2) = 0)
+    Vc    =  22.12 kips   (Vci_min governs: Mcr = 0 at midspan)
+    phi*Vc = 0.75 * 22.12  =  16.59 kips
+
+    Vu = 0.101 kips  <=  phi*Vc = 16.59 kips   [MATLAB]
+
+  CODE CHECK:  Vu <= phi*Vc   -->  Minimum stirrups sufficient at midspan
+
+  Minimum stirrup spacing at midspan:
+    s_req_min = Av / Av/s_min  =  0.22 / 0.00726  =  30.30 in
+    s_max     =  21.0 in   (spacing limit)
+    s_design  =  21 in   [MATLAB: s = 30 in before limit --> use 21 in]
+
+==================================================================
+   PART 15 -- STIRRUP ZONE DESIGN RECOMMENDATION
+==================================================================
+  Based on the full span table above, two zones are identified:
+
+  Zone A -- Near support  (x = 0 to ~13 ft from each end):
+    Controls: Vci governs for 5.3 ft <= x <= 13 ft (min s = 13 in)
+    Recommendation: Use #3 U-stirrups @ 13 in for 0 to 13 ft from each support.
+
+  Zone B -- Mid-span  (x = 13 ft to 51 ft):
+    Controls: Minimum Av/s governs (Vci_min and Vcw both > Vu/phi)
+    Recommendation: Use #3 U-stirrups @ 21 in in the middle region.
+
+  Practical design:
+    Zone A: #3 U-stirrups @  13 in  (from x = 0 to 13 ft, each end)
+    Zone B: #3 U-stirrups @  21 in  (from x = 13 ft to 51 ft, midspan)
+
+  Note: If a uniform spacing is preferred for simplicity,
+        use #3 U-stirrups @ 13 in throughout the entire span
+        (conservative, satisfies all locations).
+
+==================================================================
+   PART 16 -- FINAL SUMMARY
+==================================================================
+
+  Beam   : Double-T, L = 64 ft, f'c = 6.0 ksi, bw = 7.50 in, h = 28 in
+  Loads  : wu = 0.13173 kip/in  (1.2DL + 1.6LL)
+  Prestress : Pe = 85.0 kips  (4 strands, 15% losses)
+  Stirrups : #3 U-stirrups (Av = 0.22 in^2),  fy = 60 ksi
+
+  ------------------------------------------------------------------
+  Check                          Demand         Capacity      Status
+  -----------------------------  -------------  ------------  ------
+  dp >= 0.80*h                   22.40 in       22.40 in      OK (=)
+  Vu at code critical sec.       47.650 kips    --            --
+  phi*Vc (critical sec.)         --             42.661 kips   --
+  Stirrups required?             Vu > phi*Vc    --            YES
+  Vs_req (critical sec.)          6.652 kips    --            --
+  Vs_max allowed                 --            104.11 kips    OK
+  phi*(Vc + Vs_prov) >= Vu       53.22 kips    47.65 kips     PASS
+  Av/s_min (Crit. 1 governs)    0.00726 in2/in --            --
+  s_design (critical sec.)       21 in          21 in         USE
+  s_design (worst: x=5.3 ft)    13 in          --            USE
+  ------------------------------------------------------------------
+
+  ACI CODE CITATIONS:
+    Table 22.5.8.2   -- fr = 6*lambda*sqrt(f'c) for Mcr
+    Eq. 22.5.8.3.1a  -- Vci flexural-shear equation
+    Eq. 22.5.8.3.2   -- Vcw web-shear equation
+    Sec. 22.5.3.2    -- Critical section at dp from support
+    Table 9.6.3.3    -- Minimum Av/s (3 criteria)
+    Sec. 9.7.6.2.2   -- Stirrup spacing limits (3h/4, 24 in)
+    Table 21.2.1     -- phi = 0.75 for shear
+
+  OUTPUT FIGURE:
+    output/ShearDesign.png  -- (a) Shear demand vs. capacity
+                               (b) Required Vs
+                               (c) Required Av/s
+                               (d) Stirrup spacing along span
+
+==================================================================
+   END OF SHEAR DESIGN REPORT
+==================================================================
