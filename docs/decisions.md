@@ -48,3 +48,9 @@
 **Why:** All prior work was staged but uncommitted. Consolidating into one clean commit.
 **Files:** All `08_matlab_program_analysis/` scripts, `project_Project2/`, `project_Project3 Feasibility/`, `04_comparison_tables/`, `.claude/`, `docs/`, `CLAUDE.md`
 **Next:** Ultimate design report (`ultimateDesign.m`).
+
+## 2026-04-08 — End Block Design (Gergely-Sozen Method)
+**What:** Created `endBlockDesign.m` — standalone function implementing the Gergely-Sozen linear elastic free-body method for anchorage zone reinforcement design. Computes elastic stresses f(y), section width b(y) via polygon intersection, net moment on horizontal planes via cumulative trapezoidal integration, bursting force T = M_max/(3h/4), and stirrup sizing at f_s = 20 ksi (WSD). Also computes spalling reinforcement per ACI 318 Sec. 25.9.4.4.5 and prints ACI approximate method comparison. Generates 3-panel figure (stress distribution, net moment diagram, reinforcement layout). Added specs for theory reference and implementation.
+**Why:** End block design is a required deliverable for the prestressed beam project. Method matches CEE 530 course convention (Naaman Sec. 4.17, Mobasher lecture notes).
+**Files:** `endBlockDesign.m` (new), `main_PrestressedBeamAnalysis.m` (modified), `specs/end-block-design.md` (new), `specs/end-block-design-implementation.md` (new)
+**Next:** Run in MATLAB to verify output; compare with Naaman Ex. 4.17.3 benchmark; generate report.

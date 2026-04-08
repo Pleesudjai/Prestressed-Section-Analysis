@@ -114,6 +114,13 @@ if ~isempty(results_all)
     fprintf('Last stage results saved to workspace variable: results\n');
 end
 
+%% End block design (Gergely-Sozen method)
+fprintf('\n========================================\n');
+fprintf('Running end block design...\n');
+eb = endBlockDesign(beam, section, materials, prestress);
+saveStageFigures(My_data, 'EndBlock');
+fprintf('========================================\n');
+
 %% Generate calculation report (.txt)
 fprintf('\n========================================\n');
 fprintf('Generating calculation report...\n');
