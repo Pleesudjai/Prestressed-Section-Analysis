@@ -1,26 +1,53 @@
 %% MAIN_PRESTRESSED_BEAM_ANALYSIS
-% Main driver script for prestressed concrete beam analysis
-% Runs multiple ACI 318-19 design stages (Transfer, Service-Sustained, Service-Total)
-% and saves figures per stage to the output folder.
+% Main driver script for prestressed concrete beam analysis.
+% Shared functions (analyzePrestressedBeam, plotSection, etc.) live in
+% this folder (08_matlab_program_analysis/).
+% Project-specific files (inputData, endBlockDesign, shearDesign, etc.)
+% live in project subfolders and are loaded via addpath.
 %
-% Usage:
-%   1. Edit inputPrestressedBeam_Project1.m to define your beam
-%   2. Edit defineDesignStages.m to toggle which stages to compute
-%   3. Run this script — figures are saved to Project1/<StageName>_Figure_*.png
+% HOW TO RUN:
+%   1. Set MATLAB current folder to  08_matlab_program_analysis/
+%   2. Run this script  (F5 or >> main_PrestressedBeamAnalysis)
+%   3. Figures are saved to  project_Project2/output/
+%
+% DESIGN STAGES:
+%   Edit defineDesignStages.m to toggle stages on/off.
+%   Default: Transfer  |  Service_Sustained  |  Service_Total
+
+%% Add project subfolder so project-specific functions are found
+addpath(fullfile(fileparts(mfilename('fullpath')), 'project_Project2'));
 
 clear; clc; close all;
-My_data = 'Project1';
+My_data = fullfile('project_Project2', 'output');   % figures saved here
 
-%% ---- Load input data (single input file for all stages) ----
+%% Load input data
 fprintf('Loading input data...\n');
-[beam, section, materials, prestress, reinforcement, loads] = inputPrestressedBeam_Project1();
+[beam, section, materials, prestress, reinforcement, loads] = inputData();
 
-%% ---- Define design stages ----
-%   Edit defineDesignStages.m to toggle stages on/off (stage.active = false to skip)
+%% Print allowable stresses
+fprintf('\n----------------------------------------\n');
+fprintf('  ALLOWABLE STRESSES  [Edition: %s]\n', materials.code_edition);
+fprintf('----------------------------------------\n');
+fprintf('  AT TRANSFER (f''ci = %.1f ksi):\n', materials.fci);
+fprintf('    Compression (general) : +%.3f ksi  (+0.60 f''ci)\n', materials.f_ci_allow);
+fprintf('    Compression (ends)    : +%.3f ksi  (+%.2f f''ci)\n', ...
+    materials.f_ci_allow_end, materials.f_ci_allow_end / materials.fci);
+fprintf('    Tension (general)     : %.3f ksi  (-3*sqrt(f''ci))\n', materials.f_ti_allow);
+fprintf('    Tension (ends)        : %.3f ksi  (-6*sqrt(f''ci))\n', materials.f_ti_allow_end);
+fprintf('  AT SERVICE (f''c = %.1f ksi):\n', materials.fc);
+fprintf('    Compression (sustained SW+SDL) : +%.3f ksi  (+0.45 f''c)\n', materials.f_cs_allow_sust);
+fprintf('    Compression (total SW+SDL+LL)  : +%.3f ksi  (+0.60 f''c)\n', materials.f_cs_allow_total);
+fprintf('    Tension Class U boundary       : %.3f ksi  (-%.1f*sqrt(f''c))\n', ...
+    materials.f_tu_allow, abs(materials.f_tu_allow) / sqrt(materials.fc * 1000) * 1000);
+fprintf('    Tension (Class C)              : %.3f ksi  (-12*sqrt(f''c))\n', materials.f_ts_allow);
+fprintf('----------------------------------------\n');
+
+%% Define design stages
+%   Edit defineDesignStages.m in the parent folder to toggle stages on/off
 stages = defineDesignStages(materials, prestress);
 
-%% ---- Cross-section plot locations — defined in inputPrestressedBeam_Project1.m ----
-x_fractions = beam.x_plot_fractions;
+%% Cross-section plot locations — defined in inputData.m (beam.x_plot_fractions)
+x_fractions = beam.x_plot_fractions;   % fractions of span, e.g. [0, 0.25, 0.50, 0.75]
 
 %% ========================================================================
 %%  STAGE LOOP
@@ -54,13 +81,13 @@ for i = 1:numel(stages)
     %% Generate plots
     close all;   % reset figure numbers for each stage
 
-    % --- Main N/V/M diagram ---
+    % Main N/V/M diagram
     options.show_stresses = true;
     options.show_section  = true;
     options.stage_name    = stg.name;
     plotPrestressedBeamResults(results_i, options);
 
-    % --- Cross-section geometry at each location ---
+    % Cross-section geometry at each location
     for k = 1:length(x_fractions)
         sec_opts.beam             = beam;
         sec_opts.x_location       = x_fractions(k);
@@ -69,7 +96,7 @@ for i = 1:numel(stages)
         plotSection(section, prestress, reinforcement, materials, sec_opts);
     end
 
-    % --- Stress/strain distribution at each location ---
+    % Stress/strain distribution at each location
     for k = 1:length(x_fractions)
         ss_opts.stage_label = stg.name;
         plotSectionStressStrain(results_i, x_fractions(k), ss_opts);
@@ -81,7 +108,7 @@ end
 
 fprintf('\n========================================\n');
 fprintf('All active stages complete.\n');
-fprintf('Figures saved to: %s\\\n', My_data);
+fprintf('Figures saved to: %s/\n', My_data);
 fprintf('========================================\n');
 
 %% Export last results to workspace
@@ -90,6 +117,47 @@ if ~isempty(results_all)
     fprintf('Last stage results saved to workspace variable: results\n');
 end
 
+%% End block design (Gergely-Sozen method)
+fprintf('\n========================================\n');
+fprintf('Running end block design...\n');
+close all;
+eb = endBlockDesign(beam, section, materials, prestress);
+
+% Reuse existing plotSection and plotSectionStressStrain at x = 0
+% Find Transfer stage results (eta = 1.0) for stress plot at support
+results_transfer = [];
+for ii = 1:numel(results_all)
+    if contains(results_all{ii}.stage_name, 'Transfer', 'IgnoreCase', true)
+        results_transfer = results_all{ii};
+        break;
+    end
+end
+if isempty(results_transfer) && ~isempty(results_all)
+    results_transfer = results_all{1};   % fallback to first stage
+end
+
+if ~isempty(results_transfer)
+    % Cross-section at support (same template as stage loop)
+    sec_opts.beam             = beam;
+    sec_opts.x_location       = 0;
+    sec_opts.show_dimensions  = true;
+    sec_opts.show_properties  = true;
+    plotSection(section, prestress, reinforcement, materials, sec_opts);
+
+    % Stress/strain distribution at x = 0 (same template as stage loop)
+    ss_opts.stage_label = 'EndBlock - Transfer';
+    plotSectionStressStrain(results_transfer, 0, ss_opts);
+end
+
+saveStageFigures(fullfile(My_data, 'EndBlock'), 'EndBlock');
+fprintf('========================================\n');
+
+%% Generate calculation report (.txt)
+fprintf('\n========================================\n');
+fprintf('Generating calculation report...\n');
+generateReport(beam, section, materials, prestress, loads, results_all, My_data);
+fprintf('========================================\n');
+
 
 %% ========================================================================
 %%  LOCAL FUNCTIONS
@@ -97,7 +165,6 @@ end
 
 function printStageSummary(results_i)
 % Print key results for a single stage to the command window.
-
 fprintf('\n--- Results Summary: %s ---\n', results_i.stage_name);
 
 [M_max, idx_M_max] = max(abs(results_i.M));
@@ -113,40 +180,36 @@ fprintf('    V_max = %.1f kips at x = %.0f in\n', ...
 fprintf('    N_max = %.1f kips (prestress compression)\n', N_max);
 
 fprintf('\n  Prestress Effects at Midspan:\n');
-fprintf('    Effective prestress force: P = %.1f kips\n', results_i.P(mid_idx));
-fprintf('    Eccentricity: e = %.2f in\n', results_i.e(mid_idx));
-fprintf('    Prestress moment: M_p = %.0f kip-in\n', results_i.M_prestress(mid_idx));
+fprintf('    P = %.1f kips | e = %.2f in | M_p = %.0f kip-in\n', ...
+    results_i.P(mid_idx), results_i.e(mid_idx), results_i.M_prestress(mid_idx));
 
 fprintf('\n  Stresses at Midspan:\n');
-fprintf('    Top fiber:  f_t = %+.3f ksi  (allow: [%.3f, +%.3f])\n', ...
+fprintf('    f_top = %+.3f ksi  (allow: [%.3f, +%.3f])\n', ...
     results_i.stresses.f_top_total(mid_idx), ...
     results_i.stresses.fc_allow_tension, results_i.stresses.fc_allow_compression);
-fprintf('    Bot fiber:  f_b = %+.3f ksi  (allow: [%.3f, +%.3f])\n', ...
+fprintf('    f_bot = %+.3f ksi  (allow: [%.3f, +%.3f])\n', ...
     results_i.stresses.f_bot_total(mid_idx), ...
     results_i.stresses.fc_allow_tension, results_i.stresses.fc_allow_compression);
 
 if isfield(results_i, 'capacity')
     fprintf('\n  Nominal Capacity:\n');
-    fprintf('    M_n     = %.0f kip-in (%.0f kip-ft)\n', ...
+    fprintf('    M_n   = %.0f kip-in (%.0f kip-ft)\n', ...
         results_i.capacity.Mn, results_i.capacity.Mn/12);
-    fprintf('    φ·M_n   = %.0f kip-in (%.0f kip-ft)\n', ...
+    fprintf('    phi*Mn = %.0f kip-in (%.0f kip-ft)\n', ...
         results_i.capacity.phi_Mn, results_i.capacity.phi_Mn/12);
-    fprintf('    D/C     = %.2f\n', abs(results_i.M(idx_M_max)) / results_i.capacity.phi_Mn);
+    fprintf('    D/C   = %.2f\n', abs(results_i.M(idx_M_max)) / results_i.capacity.phi_Mn);
 end
 
 if isfield(results_i.reactions, 'left')
     fprintf('\n  Reactions:\n');
-    fprintf('    R_left  = %.1f kips at x = %.0f in\n', ...
-        results_i.reactions.left,  results_i.reactions.x_left);
-    fprintf('    R_right = %.1f kips at x = %.0f in\n', ...
-        results_i.reactions.right, results_i.reactions.x_right);
+    fprintf('    R_left  = %.1f kips | R_right = %.1f kips\n', ...
+        results_i.reactions.left, results_i.reactions.right);
 end
 end
 
 
 function saveStageFigures(output_dir, stage_name)
 % Save all open figures with stage-prefixed filenames to output_dir.
-
 fig_handles = findall(0, 'Type', 'figure');
 if isempty(fig_handles);  return;  end
 
@@ -158,7 +221,6 @@ for i = 1:length(fig_handles)
     fig_num  = fig_handles(i).Number;
     fig_name = sprintf('%s_Figure_%d', stage_name, fig_num);
 
-    % Try to append descriptive name from figure title
     if ~isempty(fig_handles(i).Children)
         try
             title_obj = get(fig_handles(i).Children(1), 'Title');
@@ -172,15 +234,23 @@ for i = 1:length(fig_handles)
                 end
             end
         catch
-            % keep default name
         end
     end
 
-    figure(fig_handles(i));
-    saveas(fig_handles(i), fullfile(output_dir, [fig_name '.png']));
-    savefig(fig_handles(i), fullfile(output_dir, [fig_name '.fig']));
-    fprintf('  Saved: %s\n', fig_name);
+    if ~isvalid(fig_handles(i));  continue;  end
+    try
+        figure(fig_handles(i));
+        saveas(fig_handles(i), fullfile(output_dir, [fig_name '.png']));
+        try
+            savefig(fig_handles(i), fullfile(output_dir, [fig_name '.fig']));
+        catch
+            % savefig can fail in batch/headless mode — skip .fig silently
+        end
+        fprintf('  Saved: %s\n', fig_name);
+    catch ME
+        fprintf('  Warning: could not save %s: %s\n', fig_name, ME.message);
+    end
 end
 
-fprintf('  → %d figure(s) saved to %s\\\n', length(fig_handles), output_dir);
+fprintf('  → %d figure(s) saved to %s/\n', length(fig_handles), output_dir);
 end

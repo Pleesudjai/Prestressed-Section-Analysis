@@ -393,46 +393,14 @@ end
 
 
 function plotEndBlockResults(eb, section)
-% Generate 3-panel figure for end block design.
-
-fig = figure('Name', 'End Block Design - Gergely-Sozen', ...
-    'Position', [100 100 1400 500]);
+% Generate 3 separate figures for end block design.
 
 y = eb.y_net;
 y_min_sec = min(section.vertices(:,2));
 
-%% Panel (a): Stress distribution + section outline
-subplot(1, 3, 1);
-hold on;
-
-% Section outline (scaled to fit)
-b_max = max(eb.b_grid);
-f_range = max(abs(eb.f_grid));
-if f_range == 0; f_range = 1; end
-
-% Plot section outline as shaded background (width scaled to stress axis)
-b_scaled = eb.b_grid / b_max * f_range * 0.3;
-fill([b_scaled, fliplr(-b_scaled)], [y, fliplr(y)], ...
-    [0.9 0.9 0.95], 'EdgeColor', [0.7 0.7 0.8], 'LineWidth', 0.5);
-
-% Stress distribution
-plot(eb.f_grid, y, 'b-', 'LineWidth', 2);
-plot([0 0], [y_min_sec, y_min_sec + eb.h], 'k--', 'LineWidth', 0.5);
-
-% Mark tendon and CGC
-plot(0, eb.y_ps, 'rv', 'MarkerSize', 10, 'MarkerFaceColor', 'r');
-plot(0, section.yc, 'k^', 'MarkerSize', 8, 'MarkerFaceColor', 'k');
-
-xlabel('Stress, f(y) (ksi)');
-ylabel('Height, y (in)');
-title('(a) End Face Stress Distribution');
-legend('Section outline', 'f(y) = P/A + Pe(y-yc)/I', '', 'Tendon (y_{ps})', 'CGC (y_c)', ...
-    'Location', 'best');
-grid on;
-hold off;
-
-%% Panel (b): Net moment diagram
-subplot(1, 3, 2);
+%% Figure: Net moment diagram
+figure('Name', 'EndBlock - Net Moment Diagram', ...
+    'Position', [720 100 600 500]);
 hold on;
 
 % Plot all three moment curves
@@ -448,20 +416,21 @@ plot(eb.M_max * sign(eb.M_net(abs(eb.M_net) == eb.M_max)), eb.y_Mmax, ...
 yline(eb.y_ps, ':', 'y_{ps}', 'Color', 'r', 'LineWidth', 1, 'LabelHorizontalAlignment', 'left');
 yline(section.yc, ':', 'y_c', 'Color', [0.3 0.3 0.3], 'LineWidth', 1, 'LabelHorizontalAlignment', 'left');
 
-xlabel('Moment (kip-in)');
-ylabel('Height, y (in)');
-title('(b) Net Moment on Horizontal Planes');
+xlabel('Moment (kip-in)', 'FontSize', 12);
+ylabel('Height, y (in)', 'FontSize', 12);
+title('Net Moment on Horizontal Planes', 'FontSize', 14);
 legend('M_{concrete}', 'M_{prestress}', 'M_{net}', ...
-    sprintf('M_{max} = %.0f k-in', eb.M_max), 'Location', 'best');
+    sprintf('M_{max} = %.0f kip-in at y = %.1f in', eb.M_max, eb.y_Mmax), ...
+    'Location', 'best', 'FontSize', 10);
 grid on;
 hold off;
 
-%% Panel (c): Reinforcement layout (elevation view of end block)
-subplot(1, 3, 3);
+%% Figure: Reinforcement layout (elevation view of end block)
+figure('Name', 'EndBlock - Reinforcement Layout', ...
+    'Position', [100 100 700 500]);
 hold on;
 
 % Draw section outline (elevation: x = distance from end, y = height)
-% End block extends from x=0 to x=h
 rect_x = [0, eb.h, eb.h, 0, 0];
 rect_y = [y_min_sec, y_min_sec, y_min_sec + eb.h, y_min_sec + eb.h, y_min_sec];
 plot(rect_x, rect_y, 'k-', 'LineWidth', 1.5);
@@ -470,36 +439,32 @@ plot(rect_x, rect_y, 'k-', 'LineWidth', 1.5);
 plot([0, eb.h], [eb.y_ps, eb.y_ps], 'r-', 'LineWidth', 2);
 plot(0, eb.y_ps, 'r>', 'MarkerSize', 10, 'MarkerFaceColor', 'r');
 text(eb.h * 0.02, eb.y_ps + 1, sprintf('F_i = %.0f k', eb.F_i), ...
-    'Color', 'r', 'FontSize', 9);
+    'Color', 'r', 'FontSize', 10);
 
 % Draw stirrups
 stirrup_x = linspace(eb.spacing/2, eb.h - eb.spacing/2, eb.n_stirrups);
 for k = 1:length(stirrup_x)
     plot([stirrup_x(k), stirrup_x(k)], [y_min_sec + 1.5, y_min_sec + eb.h - 1.5], ...
-        'b-', 'LineWidth', 1.5);
+        'b-', 'LineWidth', 2);
 end
 
 % Draw CGC
 plot([0, eb.h], [section.yc, section.yc], 'k--', 'LineWidth', 0.8);
-text(eb.h * 0.6, section.yc + 1, 'CGC', 'FontSize', 9);
+text(eb.h * 0.6, section.yc + 1, 'CGC', 'FontSize', 10);
 
 % Draw M_max location
 yline(eb.y_Mmax, '-.', 'Color', [0.8 0 0], 'LineWidth', 1);
-text(eb.h * 0.6, eb.y_Mmax - 1.5, sprintf('M_{max} at y=%.1f"', eb.y_Mmax), ...
-    'Color', [0.8 0 0], 'FontSize', 8);
+text(eb.h * 0.6, eb.y_Mmax - 1.5, sprintf('M_{max} at y = %.1f in', eb.y_Mmax), ...
+    'Color', [0.8 0 0], 'FontSize', 9);
 
-% Annotations
-title(sprintf('(c) End Block Reinforcement\n%d %s stirrups @ %.1f in', ...
-    eb.n_stirrups, eb.bar_size, eb.spacing));
-xlabel('Distance from end face (in)');
-ylabel('Height, y (in)');
+title(sprintf('End Block Reinforcement Layout\n%d %s U-stirrups @ %.1f in (zone = %.0f in from end)', ...
+    eb.n_stirrups, eb.bar_size, eb.spacing, eb.h), 'FontSize', 14);
+xlabel('Distance from end face (in)', 'FontSize', 12);
+ylabel('Height, y (in)', 'FontSize', 12);
 axis equal;
 xlim([-2, eb.h + 2]);
 ylim([y_min_sec - 2, y_min_sec + eb.h + 4]);
 grid on;
 hold off;
-
-% Adjust figure
-sgtitle('End Block Design -- Gergely-Sozen Method', 'FontSize', 14, 'FontWeight', 'bold');
 
 end
