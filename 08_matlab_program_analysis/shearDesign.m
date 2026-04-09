@@ -3,7 +3,7 @@
 % Method: Naaman Sections 5.7 — Empirical Formulas (Vci / Vcw)
 %
 % HOW TO RUN:
-%   Set MATLAB current folder to project_Project2/, then >> shearDesign
+%   Set MATLAB current folder to 08_matlab_program_analysis/, then >> shearDesign
 %
 % EQUATIONS (from class notes + Naaman pp. 221-260):
 %   Vci = 0.6*lambda*sqrt(f'c)*bw*dp + Vd + (Vi/Mmax)*Mcr
@@ -14,7 +14,6 @@
 %   Vu <= phi*(Vc + Vs)  =>  Vs >= Vu/phi - Vc
 %   Av/s = Vs / (fy * d)     [vertical stirrups, beta=45 deg]
 
-addpath(fullfile(fileparts(mfilename('fullpath')), '..'));
 clear; clc; close all;
 
 fprintf('======================================================\n');
@@ -552,7 +551,7 @@ sgtitle(sprintf('Shear Design — Double-T Beam   |   f''c = %.0f ksi,  bw = %.1
     fc, bw, h, L/12), 'FontSize', 13, 'FontWeight', 'bold');
 
 % ---- Save ----
-out_dir = 'output';
+out_dir = fullfile('project_Project2', 'output');
 if ~exist(out_dir,'dir'), mkdir(out_dir); end
 saveas(gcf, fullfile(out_dir,'ShearDesign.png'));
 savefig(gcf, fullfile(out_dir,'ShearDesign.fig'));

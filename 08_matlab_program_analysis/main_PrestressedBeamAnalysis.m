@@ -14,9 +14,6 @@
 %   Edit defineDesignStages.m to toggle stages on/off.
 %   Default: Transfer  |  Service_Sustained  |  Service_Total
 
-%% Add project subfolder so project-specific functions are found
-addpath(fullfile(fileparts(mfilename('fullpath')), 'project_Project2'));
-
 clear; clc; close all;
 My_data = fullfile('project_Project2', 'output');   % figures saved here
 

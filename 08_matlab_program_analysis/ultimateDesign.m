@@ -2,9 +2,9 @@
 %  Project 1: Double-T Prestressed Beam
 %
 %  HOW TO RUN:
-%    1. Set MATLAB working directory to project_Project2/
+%    1. Set MATLAB working directory to 08_matlab_program_analysis/
 %    2. Run this script (F5 or >> ultimateDesign)
-%    3. Figures + report saved to  output/
+%    3. Figures + report saved to  project_Project2/output/
 %
 %  SIGN CONV.:   compression = positive, tension = negative
 %
@@ -15,7 +15,6 @@
 %    φMn ≥ Mu  AND  φMn ≥ 1.2·Mcr
 %    εt = (dp−c)/c · 0.003 ≥ 0.004 (ACI §9.3.3)
 
-addpath(fullfile(fileparts(mfilename('fullpath')), '..'));  % shared helpers
 clear; clc; close all;
 
 %% ======================================================================
@@ -38,7 +37,7 @@ design_code = 'CEE530';   % <--- CHANGE HERE: 'CEE530'  or  'ACI-318-19'
 n_strands_design = 13;    % <--- CHANGE HERE: 13 (design) or [] (use inputData)
 Aps_per_strand   = 0.153; % in^2 per 1/2-in strand
 
-output_dir = 'output';
+output_dir = fullfile('project_Project2', 'output');
 if ~exist(output_dir, 'dir');  mkdir(output_dir);  end
 
 %% ======================================================================
