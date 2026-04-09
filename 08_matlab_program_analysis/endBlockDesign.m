@@ -6,11 +6,15 @@ function [eb] = endBlockDesign(beam, section, materials, prestress)
 % (Naaman Sec. 4.17, Gergely & Sozen 1967).
 %
 % METHOD:
-%   1. Compute elastic stresses f(y) = F_i/A + F_i*e_0*(y-yc)/Ix
+%   1. Compute elastic stresses f(y) = F_i/A + F_i*e_0*(yc-y)/Ix
 %   2. Integrate f(y)*b(y)*(y_cut - y) dy to get M_concrete at each y_cut
 %   3. Subtract M_prestress = F_i*(y_cut - y_ps) when y_cut > y_ps
-%   4. Find M_max -> T_burst = M_max / (3h/4)
-%   5. Size stirrups at f_s = 20 ksi (WSD, per Naaman/Mobasher)
+%   4. Find M_max -> T_burst = M_max / lever_arm
+%   5. Size stirrups at f_s = 20 ksi (WSD)
+%
+%   Two lever arm options (set 'method' variable in Section 6):
+%     'deep_beam'     : lever_arm = 0.8*h  (Prof. Fafitis, CEE 530)
+%     'gergely_sozen' : lever_arm = 3h/4   (Naaman Sec. 4.17)
 %
 % SIGN CONVENTION: compression = positive, tension = negative
 % COORDINATE ORIGIN: y = 0 at bottom of stems
@@ -148,15 +152,34 @@ M_net = M_concrete + M_prestress;
 y_Mmax = y_grid(idx_max);
 
 %% ================================================================
-%%  6. BURSTING FORCE (GERGELY-SOZEN)
+%%  6. BURSTING FORCE
 %% ================================================================
-lever_arm = 3 * h / 4;
+% Two methods available:
+%   'deep_beam'       — T = M_max / (0.8*h)   (Prof. Fafitis, CEE 530)
+%   'gergely_sozen'   — T = M_max / (3*h/4)   (Naaman Sec. 4.17)
+%
+% Deep beam: z = 0.2h from end face, lever arm = h - z = 0.8h
+% Gergely-Sozen: T at h/4, C at h, lever arm = 3h/4
+
+method = 'deep_beam';   % <-- CHANGE HERE to switch method
+
+switch method
+    case 'deep_beam'
+        lever_arm = 0.8 * h;
+        method_label = 'Deep Beam (Fafitis CEE 530)';
+    case 'gergely_sozen'
+        lever_arm = 3 * h / 4;
+        method_label = 'Gergely-Sozen (Naaman Sec. 4.17)';
+    otherwise
+        error('Unknown method: %s. Use ''deep_beam'' or ''gergely_sozen''.', method);
+end
+
 T_burst = M_max / lever_arm;
 
 %% ================================================================
 %%  7. STIRRUP DESIGN (WSD: f_s = 20 ksi)
 %% ================================================================
-f_s = 20.0;   % ksi (working stress design, per Naaman/Mobasher)
+f_s = 20.0;   % ksi (working stress design, per Naaman / Fafitis)
 
 % Default #3 U-stirrups
 bar_size = '#3';
@@ -216,7 +239,12 @@ eb.M_prestress = M_prestress;
 eb.M_net       = M_net;
 eb.M_max       = M_max;
 eb.y_Mmax      = y_Mmax;
+eb.method      = method;
+eb.method_label = method_label;
+eb.lever_arm   = lever_arm;
 eb.T_burst     = T_burst;
+eb.T_burst_GS  = M_max / (3*h/4);    % Gergely-Sozen (for comparison)
+eb.T_burst_DB  = M_max / (0.8*h);    % Deep Beam (for comparison)
 eb.f_s         = f_s;
 eb.As_req      = As_req;
 eb.bar_size    = bar_size;
@@ -313,8 +341,8 @@ function printEndBlockResults(eb, section, materials)
 % Print detailed end block design results to console.
 
 fprintf('\n======================================================\n');
-fprintf('   END BLOCK DESIGN -- GERGELY-SOZEN METHOD\n');
-fprintf('   (Naaman Sec. 4.17 / Mobasher CEE 530)\n');
+fprintf('   END BLOCK DESIGN -- %s\n', eb.method_label);
+fprintf('   CEE 530 Prestressed Concrete (Prof. Fafitis)\n');
 fprintf('======================================================\n');
 
 fprintf('\n------ SECTION PROPERTIES ------\n');
@@ -364,10 +392,17 @@ end
 fprintf('\n------ MAXIMUM NET MOMENT ------\n');
 fprintf('  M_max = %.2f kip-in at y = %.2f in\n', eb.M_max, eb.y_Mmax);
 
-fprintf('\n------ BURSTING FORCE (GERGELY-SOZEN) ------\n');
-fprintf('  Lever arm = 3h/4 = 3*%.2f/4 = %.2f in\n', eb.h, 3*eb.h/4);
-fprintf('  T_burst = M_max / (3h/4) = %.2f / %.2f = %.2f kip\n', ...
-    eb.M_max, 3*eb.h/4, eb.T_burst);
+fprintf('\n------ BURSTING FORCE [%s] ------\n', eb.method_label);
+fprintf('  Lever arm = %.2f * h = %.2f * %.2f = %.2f in\n', ...
+    eb.lever_arm/eb.h, eb.lever_arm/eb.h, eb.h, eb.lever_arm);
+fprintf('  T_burst = M_max / lever_arm = %.2f / %.2f = %.2f kip\n', ...
+    eb.M_max, eb.lever_arm, eb.T_burst);
+
+fprintf('\n  --- Method Comparison ---\n');
+fprintf('  Deep Beam (Fafitis):    T = M_max / (0.8h)  = %.2f / %.2f = %.2f kip\n', ...
+    eb.M_max, 0.8*eb.h, eb.T_burst_DB);
+fprintf('  Gergely-Sozen (Naaman): T = M_max / (3h/4)  = %.2f / %.2f = %.2f kip\n', ...
+    eb.M_max, 3*eb.h/4, eb.T_burst_GS);
 
 fprintf('\n------ STIRRUP DESIGN (WSD: f_s = %.0f ksi) ------\n', eb.f_s);
 fprintf('  A_s_req = T / f_s = %.2f / %.0f = %.4f in^2\n', eb.T_burst, eb.f_s, eb.As_req);
@@ -393,10 +428,92 @@ end
 
 
 function plotEndBlockResults(eb, section)
-% Generate 3 separate figures for end block design.
+% Generate 5 separate figures for end block design:
+%   1. Stress distribution f(y) vs y
+%   2. Force distribution q(y) = f(y)*b(y) vs y
+%   3. Net moment on horizontal planes M_net(y) vs y
+%   4. Reinforcement layout (elevation)
+%   (Cross-section and stress/strain at x=0 are plotted by the caller
+%    using the shared plotSection / plotSectionStressStrain templates.)
 
 y = eb.y_net;
 y_min_sec = min(section.vertices(:,2));
+
+%% Figure: Stress distribution f(y) vs y
+figure('Name', 'EndBlock - Stress Distribution', ...
+    'Position', [100 100 500 600]);
+hold on;
+
+% Stress line
+plot(eb.f_grid, y, 'b-', 'LineWidth', 2.5);
+
+% Shade stress area
+fill([eb.f_grid, 0, 0], [y, y(end), y(1)], ...
+    [0.7 0.8 1.0], 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+plot(eb.f_grid, y, 'b-', 'LineWidth', 2.5);
+
+% Zero line
+plot([0 0], [y_min_sec, y_min_sec + eb.h], 'k-', 'LineWidth', 0.8);
+
+% Annotate fiber stresses
+text(eb.f_top, y_min_sec + eb.h, sprintf('  %+.1f psi', eb.f_top*1000), ...
+    'FontSize', 10, 'FontWeight', 'bold', 'Color', 'b', 'VerticalAlignment', 'middle');
+text(eb.f_bot, y_min_sec, sprintf('  %+.1f psi', eb.f_bot*1000), ...
+    'FontSize', 10, 'FontWeight', 'bold', 'Color', 'b', 'VerticalAlignment', 'middle');
+
+% Mark tendon and CGC
+yline(eb.y_ps, ':', sprintf('y_{ps} = %.1f in', eb.y_ps), ...
+    'Color', 'r', 'LineWidth', 1, 'LabelHorizontalAlignment', 'left', 'FontSize', 9);
+yline(section.yc, ':', sprintf('y_c = %.1f in', section.yc), ...
+    'Color', [0.3 0.3 0.3], 'LineWidth', 1, 'LabelHorizontalAlignment', 'left', 'FontSize', 9);
+
+xlabel('Stress, f(y) (ksi)', 'FontSize', 12);
+ylabel('Height, y (in)', 'FontSize', 12);
+title('End Face Stress Distribution', 'FontSize', 14);
+grid on;
+hold off;
+
+%% Figure: Force distribution q(y) = f(y)*b(y) vs y
+figure('Name', 'EndBlock - Force Distribution', ...
+    'Position', [620 100 500 600]);
+hold on;
+
+q_grid = eb.f_grid .* eb.b_grid;   % kip/in
+
+% Force line
+plot(q_grid, y, 'b-', 'LineWidth', 2.5);
+
+% Shade force area
+fill([q_grid, 0, 0], [y, y(end), y(1)], ...
+    [0.7 0.8 1.0], 'EdgeColor', 'none', 'FaceAlpha', 0.3);
+plot(q_grid, y, 'b-', 'LineWidth', 2.5);
+
+% Zero line
+plot([0 0], [y_min_sec, y_min_sec + eb.h], 'k-', 'LineWidth', 0.8);
+
+% Annotate key values at section transitions
+y_vertices = unique(sort(section.vertices(:,2)));
+y_label = unique(sort([y_min_sec, y_vertices', y_min_sec + eb.h, eb.y_ps, section.yc]));
+y_label = y_label(y_label >= min(y) & y_label <= max(y));
+for k = 1:length(y_label)
+    [~, idx_k] = min(abs(y - y_label(k)));
+    q_val = q_grid(idx_k);
+    if abs(q_val) > max(abs(q_grid)) * 0.02   % skip near-zero
+        plot(q_val, y(idx_k), 'ko', 'MarkerSize', 5, 'MarkerFaceColor', 'k');
+        text(q_val, y(idx_k), sprintf('  %.0f lb/in (y=%.0f)', q_val*1000, y(idx_k)), ...
+            'FontSize', 8, 'VerticalAlignment', 'middle');
+    end
+end
+
+% Mark tendon and CGC
+yline(eb.y_ps, ':', 'Color', 'r', 'LineWidth', 1);
+yline(section.yc, ':', 'Color', [0.3 0.3 0.3], 'LineWidth', 1);
+
+xlabel('Force per unit height, q(y) = f(y) \cdot b(y) (kip/in)', 'FontSize', 11);
+ylabel('Height, y (in)', 'FontSize', 12);
+title('Force Distribution Along Section Depth', 'FontSize', 14);
+grid on;
+hold off;
 
 %% Figure: Net moment diagram
 figure('Name', 'EndBlock - Net Moment Diagram', ...

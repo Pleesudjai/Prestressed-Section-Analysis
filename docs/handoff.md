@@ -1,47 +1,59 @@
-# Session Handoff — 2026-03-25
+# Session Handoff — 2026-04-08
 
 ## Completed This Session
-- Primed session via `/prime`
-- Fixed Vci lower bound criteria: changed 5.0 from floor to **cap** (upper bound), added 1.7 as ACI hard floor
-- Updated `shearDesign.m` — two-tier bounds: `max(Vci, 1.7*...)` then `min(Vci, 5.0*...)`
-- Fixed bug on line 439 (old variable names `Vci_min_coeff`/`Vci_min` → `Vci_min_ACI`/`Vci_max_CEE`)
-- Updated `create_shear_report_v2.js` — Sec 2.1 shows both `≥ 1.7` (floor) and `≤ 5.0` (cap)
-- Rewrote Sec 2.2 from "Lower Bound on Vci" to "Bounds on Vci" (floor + cap explanation)
-- Added **detailed calculations for ALL 4 sections** (Parts 3, 3B, 3C, 3D) — previously only Section 1 had detail
-- Updated Part 5 summary table with corrected values (Vci governs at Sections 2-4, not Vcw)
-- Updated Part 6 recommendation: s = 13" in support region, 21" elsewhere
-- Ran 3 sub-agents (PM crosscheck, MATLAB fix, recheck) for quality assurance
-- Cross-checked ALL numerical values in JS report against MATLAB output — all match
-- Fixed Av/s rounding (0.01630 → 0.01629) for consistency
-- Generated `ShearDesign_Report_v3.docx` (163 KB) with updated plot from MATLAB
+- Added CEE 530 Prestressed Concrete notebook to NotebookLM library (ID: `cee-530-prestressed-concrete`)
+- Created end block design theory spec (`specs/end-block-design.md`) from 3 NotebookLM queries + Naaman PDF + Mobasher lecture notes + HW images
+- Created implementation spec (`specs/end-block-design-implementation.md`) with Naaman Ex. 4.17.3 verification benchmark
+- Built `endBlockDesign.m` — Gergely-Sozen / Deep Beam method for anchorage zone reinforcement
+  - `computeWidthAtY()` polygon intersection helper for arbitrary sections
+  - Net moment integration via cumtrapz on fine y-grid with refinement
+  - Two lever arm methods: `deep_beam` (0.8h, Prof. Fafitis CEE 530) and `gergely_sozen` (3h/4, Naaman)
+  - Currently set to `deep_beam` for HW3 submission
+  - Console output with full calculation table + method comparison
+  - 6 figures: stress f(y), force q(y), net moment M_net(y), reinforcement layout, cross-section (plotSection), stress/strain at x=0 (plotSectionStressStrain)
+- Created standalone runner `runEndBlockDesign.m`
+- **Major refactor:** flattened folder structure
+  - Moved `main_PrestressedBeamAnalysis.m` from `project_Project2/` to `08_matlab_program_analysis/`
+  - Moved `inputData.m`, `endBlockDesign.m`, `shearDesign.m`, `ultimateDesign.m`, `generateReport.m` out of `project_Project2/` to `08_matlab_program_analysis/`
+  - Deleted deprecated root-level `main_PrestressedBeamAnalysis.m` (old Project 1 version)
+  - Removed all `addpath('..')` calls — everything in same folder now
+  - Output still goes to `project_Project2/output/`
+- Fixed sign convention in stress formula: `f(y) = F_i/A + F_i*e_0*(yc - y)/Ix`
+- Fixed stress plot to reuse shared `plotSection` + `plotSectionStressStrain` templates instead of custom plot
+- Compared implementation against HW3 docx (I-beam example from Prof. Fafitis)
 
 ## Current State
-- **Status:** Working — shear design code and report are consistent and correct
-- **Key files modified:**
-  - `08_matlab_program_analysis/project_Project2/shearDesign.m` — two-tier Vci bounds (floor=1.7, cap=5.0)
-  - `08_matlab_program_analysis/project_Project2/create_shear_report_v2.js` — full report with 4 detailed sections, output filename now `ShearDesign_Report_v3.docx`
-  - `08_matlab_program_analysis/project_Project2/ShearDesign_Report_v3.docx` — latest report
-  - `08_matlab_program_analysis/project_Project2/output/ShearDesign.png` — regenerated shear plot with cap
-  - `08_matlab_program_analysis/project_Project2/unpacked_fen/` — extracted images for report builder
-- **Verification:** MATLAB ran successfully, all 4 sections match, cross-check agent confirmed all values
+- **Status:** Working — all scripts run cleanly from `08_matlab_program_analysis/`
+- **Key files modified/created:**
+  - `08_matlab_program_analysis/endBlockDesign.m` (new)
+  - `08_matlab_program_analysis/runEndBlockDesign.m` (new)
+  - `08_matlab_program_analysis/main_PrestressedBeamAnalysis.m` (moved + updated paths)
+  - `08_matlab_program_analysis/inputData.m` (moved)
+  - `08_matlab_program_analysis/shearDesign.m` (moved + updated paths)
+  - `08_matlab_program_analysis/ultimateDesign.m` (moved + updated paths)
+  - `08_matlab_program_analysis/generateReport.m` (moved)
+  - `specs/end-block-design.md` (new)
+  - `specs/end-block-design-implementation.md` (new)
+  - `docs/decisions.md` (updated)
+- **Verification:** MATLAB ran successfully, 6 figures generated to `project_Project2/output/EndBlock/`
+- **Git:** 4 commits pushed to origin/main (a5f5c7d → 24b325d)
 
 ## Next Steps (priority order)
-1. Review `ShearDesign_Report_v3.docx` in Word — verify formatting, page breaks, figure placement
-2. Close old files in Word (`_FEN_v2.docx`, `_FEN2_v2.docx`) and optionally rename v3 back to v2
-3. Consider ultimate design report (`ultimateDesign.m` in `project_Project2/`)
-4. Commit all changes to git
+1. Finish HW3 end block submission using current output
+2. Commit latest endBlockDesign.m changes (stress plot cleanup, deep beam method, force distribution plot)
+3. Run `main_PrestressedBeamAnalysis` full pipeline to verify all stages still work after folder restructure
+4. Consider ultimate design report (`ultimateDesign.m`)
+5. Update CLAUDE.md task checklist
 
 ## Open Questions / Blockers
-- `ShearDesign_Report_FEN_v2.docx` and `FEN2_v2.docx` were locked in Word during this session — could not overwrite. v3 is the current output.
-- The JS output filename was changed to `ShearDesign_Report_v3.docx` — revert in `create_shear_report_v2.js` line 962 if desired
+- `endBlockDesign.m` has uncommitted changes (removed section outline from stress plot, added force distribution plot, switched to deep beam method, Prof. Fafitis attribution)
+- `project_Project2/` still contains non-.m files: reports (.docx), JS report generators, node_modules, output figures — these stay there
+- HW3 docx references an I-beam (h=40, A=399), not our Double-T (h=28, A=487) — numbers will differ
 
 ## Context for Next Session
-- **5.0 is a CAP (upper bound), not a floor** — this was the key conceptual fix this session
-  - ACI 318-19: Vci ≥ 1.7λ√f'c × bw × dp (hard floor, prevents unrealistically low values at midspan)
-  - CEE 530: Vci ≤ 5.0λ√f'c × bw × dp (cap, prevents inflated values near supports where Vi/Mmax → ∞)
-  - MATLAB: `Vci = max(Vci, Vci_min_ACI); Vci = min(Vci, Vci_max_CEE);`
-- Numerical impact was significant: Sections 2-4 went from Vcw-governed to Vci-governed
-  - Section 2 now needs s=13" (was 21") — the critical section for stirrup design
-- The report now has 4 detailed calculation sections (Parts 3, 3B, 3C, 3D)
-- Python 3.12 at `C:\Users\chidc\AppData\Local\Programs\Python\Python312\`
-- **Context is >30 messages — consider starting fresh for next task**
+- **Prof. Fafitis** teaches CEE 530 (not Mobasher) — use Fafitis attribution for end block
+- **Deep beam method** (0.8h lever arm) is the course method; Gergely-Sozen (3h/4) is Naaman's. Both are computed, toggle via `method` variable in endBlockDesign.m Section 6
+- All scripts now run from `08_matlab_program_analysis/` as working directory — no more `cd` to subfolders
+- Standalone scripts: `>> shearDesign`, `>> ultimateDesign`, `>> runEndBlockDesign`
+- Full pipeline: `>> main_PrestressedBeamAnalysis`
+- **Context is very long (>80 messages) — start fresh session for next task**

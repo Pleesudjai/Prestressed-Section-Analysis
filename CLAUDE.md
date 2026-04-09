@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## ▶ RESUME HERE
 
-- **Current focus:** Project 2 — Shear design report (`ShearDesign_Report_v3.docx`) finalized
-- **Status:** Vci bounds corrected (1.7 floor + 5.0 cap), detailed calcs for all 4 sections added, all numbers cross-checked vs MATLAB, report + plot regenerated
-- **Next action:** Review v3 report in Word for formatting; consider ultimate design report (`ultimateDesign.m`); commit changes
-- **Status updated:** 2026-03-25
+- **Current focus:** End block design (`endBlockDesign.m`) implemented and tested
+- **Status:** Deep beam method (0.8h, Prof. Fafitis) active; Gergely-Sozen (3h/4, Naaman) available as toggle. 6 figures generated. Folder structure flattened — all .m files now in `08_matlab_program_analysis/`. Uncommitted changes in endBlockDesign.m (force plot, stress plot cleanup, deep beam switch).
+- **Next action:** Commit latest endBlockDesign.m changes; finish HW3 end block submission; run full `main_PrestressedBeamAnalysis` to verify pipeline after restructure
+- **Status updated:** 2026-04-08
 
 ---
 
@@ -95,11 +95,14 @@ main_PrestressedBeamAnalysis.m  (ROOT DRIVER — script)
     └─→ saveStageFigures(data, stage_name)   — .png + .fig to Project1/
 ```
 
-### Standalone Scripts
+### Standalone Scripts (all in `08_matlab_program_analysis/`, run from there)
 
 | Script | Purpose | Dependencies |
 |--------|---------|-------------|
-| `feasibilityDesignChart.m` | Magnel diagram (1/F vs e) + feasibility zone (e vs x/L). Hardcoded inputs — no external function calls except its own `computeSectionProps()`. | None (self-contained) |
+| `shearDesign.m` | ACI 318-19 shear design (Vci/Vcw), output to `project_Project2/output/` | `inputData()` |
+| `ultimateDesign.m` | Nominal moment capacity (ACI 318-19), output to `project_Project2/output/` | `inputData()` |
+| `runEndBlockDesign.m` | End block anchorage zone design (Deep Beam / Gergely-Sozen), output to `project_Project2/output/EndBlock/` | `inputData()`, `endBlockDesign()`, `plotSection()`, `plotSectionStressStrain()` |
+| `feasibilityDesignChart.m` | Magnel diagram (1/F vs e) + feasibility zone (e vs x/L). Hardcoded inputs. | None (self-contained) |
 | `example_sections.m` | Demo section definitions | `createPolygonalSection()` |
 | `quickInputPE.m` | One-liner input: `quickInputPE(P, e, L, vertices)` | Same pipeline as full input |
 
@@ -114,7 +117,7 @@ Input functions return **6 structs**: `beam`, `section`, `materials`, `prestress
 
 | Folder | Status |
 |--------|--------|
-| `project_Project2/` | Shear + ultimate design (has own `main`, `inputData`, `shearDesign`, `ultimateDesign`) |
+| `project_Project2/` | Output + reports only (all .m files moved to `08_matlab_program_analysis/`) |
 | `project_Project3 Feasibility/` | Multi-section feasibility (`feasibility4Sections.m`, `runAllCases.m`) |
 | `project_Project4 Ultimate/` | Placeholder (empty) |
 
@@ -283,9 +286,12 @@ Vertices (counterclockwise):
 | Maple worksheets in `03_concept_notes/` | Concept-level, not analysis outputs | 2026-03-16 |
 | Compression = positive sign convention | Consistent with ACI 318 prestress notation | — |
 | y = 0 at bottom of stems | Consistent shoelace formula and eccentricity | — |
-| Vci_min coeff = 5.0 (CEE 530), not ACI's 1.7 | Prof. Mobasher's course convention; extracted as `Vci_min_coeff` variable | 2026-03-24 |
+| Vci_min coeff = 5.0 (CEE 530), not ACI's 1.7 | Prof. Fafitis course convention; extracted as `Vci_min_coeff` variable | 2026-03-24 |
 | Signed Vu in shear design plot | Match main analysis SFD convention (+left, −right) | 2026-03-24 |
 | FEN v2 report is the base for shear submission | User's hand-polished version; do NOT rebuild from scratch | 2026-03-24 |
+| End block: deep beam method (0.8h) as default | Prof. Fafitis CEE 530 course method; Gergely-Sozen (3h/4) available as toggle | 2026-04-08 |
+| Flatten folder structure | All .m files in `08_matlab_program_analysis/`, output stays in `project_Project2/output/` | 2026-04-08 |
+| Prof. Fafitis teaches CEE 530 | Not Mobasher — corrected attribution in all end block code and docs | 2026-04-08 |
 
 ---
 
@@ -300,9 +306,15 @@ Vertices (counterclockwise):
 - [ ] Verify all critical sections pass ACI 318 stress limits
 - [ ] Written report in `06_draft_text/`
 
+### Project 2 — Shear, Ultimate, End Block
+- [x] Shear design (Vci/Vcw, shearDesign.m)
+- [x] End block design (endBlockDesign.m, runEndBlockDesign.m)
+- [ ] Ultimate design report (ultimateDesign.m)
+
 ### Homework
 - [x] HW 1 — input file + section figure (`04_comparison_tables/HW_1/`)
 - [x] HW 2 — figures (`04_comparison_tables/HW_2/`, `HW_2_new/`, `HW_2_test/`)
+- [ ] HW 3 — End block design (in progress, using runEndBlockDesign.m output)
 
 ---
 
